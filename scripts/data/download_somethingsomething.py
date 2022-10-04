@@ -24,14 +24,14 @@ file_adresses = [
     "https://developer.qualcomm.com/qfile/68943/20bn-something-something-download-package-labels.zip"
 ]
 
+root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
 
-
-if not os.path.exists('/home/mona/somethingsomething/'):
-    os.mkdir('/home/mona/somethingsomething/')
+if not os.path.exists(root_add):
+    os.makedirs(root_add)
 
 for adress in file_adresses:
     file_name = adress.split('/')[-1]
-    if os.path.exists(f'/home/mona/somethingsomething/{file_name}'):
+    if os.path.exists(f'{root_add}{file_name}'):
         continue
     else:
         download_script = f"""curl {adress} \
@@ -50,12 +50,14 @@ for adress in file_adresses:
         -H 'upgrade-insecure-requests: 1' \
         -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36' \
         --compressed \
-        --output ./somethingsomething/{file_name}"""
+        --output {root_add}{file_name}"""
 
         os.system(download_script)
 
-# os.system('unzip /home/mona/somethingsomething/20bn-something-something-v2-\??.zip')
-# os.system('cat 20bn-something-something-v2-?? | tar -xvzf -')
+os.system(f'unzip {root_add}20bn-something-something-v2-\??.zip -d {root_add}')
+os.system(f'unzip {root_add}20bn-something-something-download-package-labels.zip -d {root_add}')
+os.system(f'cat {root_add}20bn-something-something-v2-?? | tar -xvzf - -C {root_add}')
 
-dir_path = r'20bn-something-something-v2'
+dir_path = rf'{root_add}20bn-something-something-v2'
 print("Total number of videos: ", len([entry for entry in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, entry))]))
+
