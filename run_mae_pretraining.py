@@ -85,7 +85,7 @@ def get_args():
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 4)
-    parser.add_argument('--output_dir', default='',
+    parser.add_argument('--output_dir', default='./results',
                         help='path where to save, empty for no saving')
     parser.add_argument('--log_dir', default=None,
                         help='path where to tensorboard log')
@@ -105,6 +105,19 @@ def get_args():
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem',
                         help='')
     parser.set_defaults(pin_mem=True)
+
+    # dataset name
+    parser.add_argument('--data_set', default='SSV2', type=str, help='Other dataset options is: Kinetics-400, UCF101, HMDB51')
+    parser.add_argument('--reprob', default=0.5, type=float, help='Probability that the Random Erasing operation will be performed.')
+    parser.add_argument('--remode', default='const', type=str, help="mode: pixel color mode, one of 'const', 'rand', or 'pixel. \
+        'const' - erase block is constant color of 0 for all channels \
+        'rand'  - erase block is same per-channel random (normal) color \
+        'pixel' - erase block is per-pixel random (normal) color")
+    parser.add_argument('--recount', default=1, type=int, help='max_count: maximum number of erasing blocks per image, area per box is scaled by count. \
+        per-image count is randomly chosen between 1 and this value.')
+    parser.add_argument('--test_num_segment', default=10, type=int)
+    parser.add_argument('--test_num_crop', default=3, type=int)
+    parser.add_argument('--short_side_size', default=256, type=int)
 
     # distributed training parameters
     parser.add_argument('--world_size', default=1, type=int,

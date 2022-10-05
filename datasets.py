@@ -37,19 +37,20 @@ class DataAugmentationForVideoMAE(object):
 
 def build_pretraining_dataset(args):
     transform = DataAugmentationForVideoMAE(args)
-    dataset = VideoMAE(
-        root=None,
-        setting=args.data_path,
-        video_ext='mp4',
-        is_color=True,
-        modality='rgb',
-        new_length=args.num_frames,
-        new_step=args.sampling_rate,
-        transform=transform,
-        temporal_jitter=False,
-        video_loader=True,
-        use_decord=True,
-        lazy_init=False)
+    # dataset = VideoMAE(
+    #     root=None,
+    #     setting=args.data_path,
+    #     video_ext='mp4',
+    #     is_color=True,
+    #     modality='rgb',
+    #     new_length=args.num_frames,
+    #     new_step=args.sampling_rate,
+    #     transform=transform,
+    #     temporal_jitter=False,
+    #     video_loader=True,
+    #     use_decord=True,
+    #     lazy_init=False)
+    dataset = build_dataset(is_train=True, test_mode=False, args=args)
     print("Data Aug = %s" % str(transform))
     return dataset
 
