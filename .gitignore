@@ -1,2 +1,5 @@
 dataset/somethingsomething/
 *.pyc
+nohup.out
+.vscode/launch.json
+results/

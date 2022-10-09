@@ -18,9 +18,9 @@ import modeling_pretrain
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE pre-training script', add_help=False)
-    parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--epochs', default=800, type=int)
-    parser.add_argument('--save_ckpt_freq', default=50, type=int)
+    parser.add_argument('--batch_size', default=12, type=int)
+    parser.add_argument('--epochs', default=800 , type=int)
+    parser.add_argument('--save_ckpt_freq', default=20, type=int)
 
     # Model parameters
     parser.add_argument('--model', default='pretrain_videomae_base_patch16_224', type=str, metavar='MODEL',
@@ -32,7 +32,7 @@ def get_args():
     parser.add_argument('--mask_type', default='tube', choices=['random', 'tube'],
                         type=str, help='masked strategy of video tokens/patches')
 
-    parser.add_argument('--mask_ratio', default=0.75, type=float,
+    parser.add_argument('--mask_ratio', default=0.9, type=float,
                         help='ratio of the visual tokens/patches need be masked')
 
     parser.add_argument('--input_size', default=224, type=int,
@@ -49,7 +49,7 @@ def get_args():
                         help='Optimizer (default: "adamw"')
     parser.add_argument('--opt_eps', default=1e-8, type=float, metavar='EPSILON',
                         help='Optimizer Epsilon (default: 1e-8)')
-    parser.add_argument('--opt_betas', default=None, type=float, nargs='+', metavar='BETA',
+    parser.add_argument('--opt_betas', default=(0.9, 0.95), type=float, nargs='+', metavar='BETA',
                         help='Optimizer Betas (default: None, use opt default)')
     parser.add_argument('--clip_grad', type=float, default=None, metavar='NORM',
                         help='Clip gradient norm (default: None, no clipping)')
@@ -80,14 +80,14 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/path/to/list_kinetics-400', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
-    parser.add_argument('--sampling_rate', type=int, default= 4)
+    parser.add_argument('--sampling_rate', type=int, default= 2)
     parser.add_argument('--output_dir', default='./results',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default=None,
+    parser.add_argument('--log_dir', default='./results',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')

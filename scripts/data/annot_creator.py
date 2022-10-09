@@ -19,6 +19,8 @@ train_label = json.load(f)
 for i in train_label:
     id = i['id']
     path = os.path.join(video_mp4_root_add, id+'.mp4')
+    if not os.path.exists(path):
+        continue
     label_name = i['template'].lower()
     label_name = label_name.replace('[something]','something')
     label_name = label_name.replace('[some substance]','some substance')
