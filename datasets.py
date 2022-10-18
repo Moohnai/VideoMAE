@@ -92,13 +92,16 @@ def build_dataset(is_train, test_mode, args):
         anno_path = None
         if is_train is True:
             mode = 'train'
-            anno_path = os.path.join(args.data_path, 'train.csv')
-        elif test_mode is True:
-            mode = 'test'
-            anno_path = os.path.join(args.data_path, 'test.csv') 
+            # anno_path = os.path.join(args.data_path, 'train.csv')
+            anno_path = args.data_path
+        # elif test_mode is True:
+            # mode = 'test'
+            # anno_path = os.path.join(args.data_path, 'test.csv') 
+            
         else:  
             mode = 'validation'
-            anno_path = os.path.join(args.data_path, 'val.csv') 
+            # anno_path = os.path.join(args.data_path, 'val.csv') 
+            anno_path = args.eval_data_path 
 
         dataset = SSVideoClsDataset(
             anno_path=anno_path,
@@ -115,7 +118,7 @@ def build_dataset(is_train, test_mode, args):
             new_height=256,
             new_width=320,
             args=args)
-        nb_classes = 174
+        nb_classes = args.nb_classes
 
     elif args.data_set == 'UCF101':
         mode = None
