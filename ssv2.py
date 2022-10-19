@@ -43,7 +43,7 @@ class SSVideoClsDataset(Dataset):
         import pandas as pd
         cleaned = pd.read_csv(self.anno_path, header=None, delimiter=' ')
         self.dataset_samples = list(cleaned.values[:, 0])
-        self.label_array = list(cleaned.values[:, 1])
+        self.label_array = list(cleaned.values[:, -1])
 
         if (mode == 'train'):
             pass

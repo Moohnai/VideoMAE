@@ -123,7 +123,7 @@ val_df = pd.DataFrame(val_df)
 
 
 # to_csv() 
-csv_annotation_root = "/home/mona/SSV2_BB/annotation"
+csv_annotation_root = "/home/mona/VideoMAE/dataset/somethingsomething/annotation"
 if not os.path.exists(csv_annotation_root):
     os.makedirs(csv_annotation_root)
 train_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "train_BB.csv"), sep=' ', na_rep='', float_format=None, 
