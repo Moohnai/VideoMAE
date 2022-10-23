@@ -9,6 +9,8 @@ val_df = {'path':[], 'label_name':[], 'label_num':[]}
 # root addresses
 root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
 video_mp4_root_add = "/home/mona/VideoMAE/dataset/somethingsomething/mp4_videos"
+num_categories = [13, 71, 72, 73, 75, 76, 82, 104, 105, 106, 107, 110, 112, 113, 118, 121, 148]
+map_dict = {str(cat):str(i) for i, cat in enumerate(num_categories)}
 
 f = open(os.path.join(root_add, 'labels','labels.json'))
 labels = json.load(f)
@@ -36,10 +38,10 @@ for i in train_label:
     label_name = label_name.replace('[somewhere]','somewhere')
     label_name = label_name.replace('[part]','part')
     label_num = labels[label_name.capitalize()]
-    if int(label_num) <= 4: 
+    if int(label_num) in num_categories: 
         train_df['path'].append(path)
         train_df['label_name'].append(label_name)
-        train_df['label_num'].append(label_num)
+        train_df['label_num'].append(map_dict[label_num])
 
 
 f = open(os.path.join(root_add, 'labels','validation.json'))
@@ -64,10 +66,10 @@ for i in val_label:
     label_name = label_name.replace('[somewhere]','somewhere')
     label_name = label_name.replace('[part]','part')
     label_num = labels[label_name.capitalize()]
-    if int(label_num) <= 4: 
+    if int(label_num) in num_categories: 
         val_df['path'].append(path)
         val_df['label_name'].append(label_name)
-        val_df['label_num'].append(label_num)
+        val_df['label_num'].append(map_dict[label_num])
 
 train_df = pd.DataFrame(train_df)
 val_df = pd.DataFrame(val_df)
@@ -76,13 +78,13 @@ val_df = pd.DataFrame(val_df)
 csv_annotation_root = "/home/mona/VideoMAE/dataset/somethingsomething/annotation"
 if not os.path.exists(csv_annotation_root):
     os.makedirs(csv_annotation_root)
-train_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "train_Kclass.csv"), sep=' ', na_rep='', float_format=None, 
+train_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "train_17class.csv"), sep=' ', na_rep='', float_format=None, 
 columns=None, header=False, index=False, index_label=None, mode='w', encoding=None, 
 compression='infer', quoting=None, quotechar='"', line_terminator=None, 
 chunksize=None, date_format=None, doublequote=True, escapechar=None, 
 decimal='.', errors='strict', storage_options=None)
 
-val_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "val_Kclass.csv"), sep=' ', na_rep='', float_format=None, 
+val_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "val_17class.csv"), sep=' ', na_rep='', float_format=None, 
 columns=None, header=False, index=False, index_label=None, mode='w', encoding=None, 
 compression='infer', quoting=None, quotechar='"', line_terminator=None, 
 chunksize=None, date_format=None, doublequote=True, escapechar=None, 

@@ -6,10 +6,9 @@ import orjson
 
 # read json bbox files
 Total_video_BB={}
-for i in range(1,5):
-    with open(os.path.join('/home/mona/SSV2_BB/',f'bounding_box_smthsmth_part{str(i)}.json'), "r", encoding="utf-8") as f:
-            video_BB = orjson.loads(f.read())
-    Total_video_BB.update(video_BB)
+with open('/home/mona/VideoMAE/SSV2_BB/bounding_box_smthsmth_scaled.json', "r", encoding="utf-8") as f:
+    Total_video_BB = orjson.loads(f.read())
+
 
 # create dataframe
 train_df = {'path':[], 'label_name':[], 'label_num':[]}
