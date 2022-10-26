@@ -43,9 +43,9 @@ class DataAugmentationForVideoMAE_BB(object):
         self.transform = transforms.Compose([                            
             self.train_augmentation,
             Stack(roll=False),
-            # ToTorchFormatTensor(div=True),
-            ToTorchFormatTensor(div=False),
-            # normalize,
+            ToTorchFormatTensor(div=True),
+            # ToTorchFormatTensor(div=False),
+            normalize,
         ])
         if args.mask_type == 'tube':
             self.masked_position_generator = TubeMaskingGenerator(

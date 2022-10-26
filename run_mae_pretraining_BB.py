@@ -10,7 +10,7 @@ from pathlib import Path
 from timm.models import create_model
 from optim_factory import create_optimizer
 from datasets import build_pretraining_dataset, build_pretraining_dataset_BB
-from engine_for_pretraining import train_one_epoch
+from engine_for_pretraining import train_one_epoch_BB
 from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
 import modeling_pretrain
@@ -85,21 +85,21 @@ def get_args():
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 2)
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
     parser.add_argument('--seed', default=0, type=int)
-    parser.add_argument('--resume', default='', help='resume from checkpoint')
+    parser.add_argument('--resume', default='/home/mona/VideoMAE/results/checkpoint.pth', help='resume from checkpoint')
     parser.add_argument('--auto_resume', action='store_true')
     parser.add_argument('--no_auto_resume', action='store_false', dest='auto_resume')
     parser.set_defaults(auto_resume=True)
 
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
-    parser.add_argument('--num_workers', default=0, type=int)
+    parser.add_argument('--num_workers', default=4, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem',
@@ -127,6 +127,7 @@ def get_args():
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
 
     return parser.parse_args()
+
 
 
 def get_model(args):
@@ -237,7 +238,7 @@ def main(args):
             data_loader_train.sampler.set_epoch(epoch)
         if log_writer is not None:
             log_writer.set_step(epoch * num_training_steps_per_epoch)
-        train_stats = train_one_epoch(
+        train_stats = train_one_epoch_BB(
             model, data_loader_train,
             optimizer, device, epoch, loss_scaler,
             args.clip_grad, log_writer=log_writer,

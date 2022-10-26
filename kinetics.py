@@ -647,10 +647,8 @@ class VideoMAE_BB(torch.utils.data.Dataset):
         self.transform = transform
         self.lazy_init = lazy_init
         Total_video_BB={}
-        for i in range(1,5):
-            with open(os.path.join('/home/mona/VideoMAE/SSV2_BB/',f'bounding_box_smthsmth_part{str(i)}.json'), "r", encoding="utf-8") as f:
-                    video_BB = orjson.loads(f.read())
-            Total_video_BB.update(video_BB)
+        with open('/home/mona/VideoMAE/SSV2_BB/bounding_box_smthsmth_scaled.json', "r", encoding="utf-8") as f:
+            Total_video_BB = orjson.loads(f.read())
         self.bb_data = Total_video_BB
 
 
@@ -663,6 +661,10 @@ class VideoMAE_BB(torch.utils.data.Dataset):
     #fuction for visualizing image with bounding box
     
     def visual_bbx (self, images, bboxes):
+        """
+        images (torch.Tensor or np.array): list of images in torch or numpy type.
+        bboxes (List[List]): list of list having bounding boxes in [x1, y1, x2, y2]
+        """
         if isinstance(images, torch.Tensor):
             images = images.view((16, 3) + images.size()[-2:])
         color_list = [(255,0,0), (0,255,0), (0,0,255), (255,255,0), (0, 255,255)]
@@ -671,14 +673,18 @@ class VideoMAE_BB(torch.utils.data.Dataset):
         for i, (img, bbx) in enumerate(zip(images, bboxes)):
             if isinstance(img, Image.Image):
                 frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-                (x1,y1,x2,y2) = (bbx[0], bbx[1], bbx[2], bbx[3])
+                # (x1,y1,x2,y2) = (bbx[0], bbx[1], bbx[2], bbx[3])
             elif isinstance(img, torch.Tensor):
                 frame = img.numpy().astype(np.uint8).transpose(1, 2, 0)
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                if len(bbx) != 0:
-                    (x1,y1,x2,y2) = (bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3])
+                # if len(bbx) != 0:
+                #     (x1,y1,x2,y2) = (bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3])
             if len(bbx) != 0:
-                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color_list[0], 4)
+                # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color_list[0], 4)
+                ##
+                for c, b in enumerate(bbx):
+                    cv2.rectangle(frame, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), color_list[c], 4)
+                ##
             cv2.imwrite(f'VideoMAE/SSV2_BB/data/visual_bbx/{i}.png', frame)
 
 
@@ -702,28 +708,37 @@ class VideoMAE_BB(torch.utils.data.Dataset):
         images ,frame_id_list = self._video_TSN_decord_batch_loader(directory, decord_vr, duration, segment_indices, skip_offsets)
         bboxs = []
         bboxs_labels = []
-        for c in frame_id_list:
-            bboxs.append([list(x['box2d'].values()) for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']][0]) #y1 y2 x1 x2
-            bboxs_labels.append([x['gt_annotation'] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']][0])
-        bboxs = np.array(bboxs)  #y1 y2 x1 x2 
-        bboxs = np.array([[bbox[0], bbox[2], bbox[1], bbox[3]] for bbox in bboxs]) # y1, x1, y2, x2
+        union_frames_bbox = []
+        for idx, c in enumerate(frame_id_list):
+            bboxs.append([[x['box2d']["x1"], x['box2d']["y1"], x['box2d']["x2"], x['box2d']["y2"]] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']]) # x1, y1, x2, y2
+            bboxs_labels.append([x['gt_annotation'] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']])
+            union_frame_bboxs = np.array(bboxs[-1])
+            if len(union_frame_bboxs) == 0:
+                union_frame_bboxs = np.array([[0, 0, images[idx].size[0], images[idx].size[1]]])
+            union_frame_bboxs = np.array([np.min(union_frame_bboxs[:, 0]), np.min(union_frame_bboxs[:, 1]), np.max(union_frame_bboxs[:, 2]), np.max(union_frame_bboxs[:, 3])])
+            # if all the bboxs are zero or have equal values in x and y, then we use the whole image as the bbox
+            if union_frame_bboxs[0] == union_frame_bboxs[2] or union_frame_bboxs[1] == union_frame_bboxs[3]:
+                union_frame_bboxs = np.array([0, 0, images[idx].size[0], images[idx].size[1]])
+            union_frames_bbox.append(union_frame_bboxs)
 
-        self.visual_bbx(images, bboxs)
+        union_frames_bbox = np.array(union_frames_bbox)  # x1, y1, x2, y2
 
-        process_data, process_bbx, mask = self.transform((images, bboxs)) # T*C,H,W
+        # self.visual_bbx(images, [[x] for x in union_frames_bbox])
 
-        self.visual_bbx(process_data, process_bbx)
+        process_data, process_bbx, mask = self.transform((images, union_frames_bbox)) # T*C,H,W
 
-        process_bbx = np.array([[bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]] for bbx in process_bbx if len(bbx)>0]) # y1, x1, y2, x2
+        # self.visual_bbx(process_data, process_bbx)
+
+        process_bbx = np.array([[bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]] for bbx in process_bbx if len(bbx)>0]) # x1, y1, x2, y2
 
         # if the object bbox is removed in the process of transform
         if len(process_bbx) == 0:
             bbox = np.array([0, 0, process_data.size()[-2], process_data.size()[-1]])
         else:
-            bbox = np.array([np.min(process_bbx[:, 1]), np.min(process_bbx[:, 0]), np.max(process_bbx[:, 3]), np.max(process_bbx[:, 2])]) # x1, y1, xk, yk
+            bbox = np.array([np.min(process_bbx[:, 0]), np.min(process_bbx[:, 1]), np.max(process_bbx[:, 2]), np.max(process_bbx[:, 3])]) # x1, y1, xk, yk
         process_data = process_data.view((self.new_length, 3) + process_data.size()[-2:]).transpose(0,1)  # T*C,H,W -> T,C,H,W -> C,T,H,W
         
-        return (process_data, bbox, mask)
+        return (process_data, torch.LongTensor(bbox), mask)
 
     def __len__(self):
         return len(self.clips)
