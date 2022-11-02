@@ -19,14 +19,14 @@ from optim_factory import create_optimizer, get_parameter_groups, LayerDecayValu
 from datasets import build_dataset
 from engine_for_finetuning import train_one_epoch, validation_one_epoch, final_test, merge
 from utils import NativeScalerWithGradNormCount as NativeScaler
-from utils import  multiple_samples_collate
+from utils import  multiple_samples_collate, _load_checkpoint_for_ema
 import utils
 import modeling_finetune
 
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE fine-tuning and evaluation script for video classification', add_help=False)
-    parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--batch_size', default=6, type=int)
     parser.add_argument('--epochs', default=50, type=int)
     parser.add_argument('--update_freq', default=1, type=int)
     parser.add_argument('--save_ckpt_freq', default=10, type=int)
@@ -136,11 +136,11 @@ def get_args():
     parser.add_argument('--use_cls', action='store_false', dest='use_mean_pooling')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/train_17class.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation', type=str,
                         help='dataset path')
-    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/val_17class.csv', type=str,
+    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/val.csv', type=str,
                         help='dataset path for evaluation')
-    parser.add_argument('--nb_classes', default=17, type=int,
+    parser.add_argument('--nb_classes', default=174, type=int,
                         help='number of the classification types')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_segments', type=int, default= 1)
@@ -148,9 +148,9 @@ def get_args():
     parser.add_argument('--sampling_rate', type=int, default= 4)
     parser.add_argument('--data_set', default='SSV2', choices=['Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/test',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_Allclass',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/test',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_Allclass',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -534,6 +534,14 @@ def main(args, ds_init):
                 log_writer.flush()
             with open(os.path.join(args.output_dir, "log.txt"), mode="a", encoding="utf-8") as f:
                 f.write(json.dumps(log_stats) + "\n")
+
+    # load best model
+    args.resume = os.path.join(args.output_dir, 'checkpoint-best')
+    print("Loading best model from %s" % args.resume)
+    _, client_states = model.load_checkpoint(args.output_dir, tag='checkpoint-best')
+    if model_ema is not None:
+        if args.model_ema:
+            _load_checkpoint_for_ema(model_ema, client_states['model_ema'])
 
     preds_file = os.path.join(args.output_dir, str(global_rank) + '.txt')
     test_stats = final_test(data_loader_test, model, device, preds_file)

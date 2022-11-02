@@ -1,6 +1,6 @@
 dataset/somethingsomething/
 *.pyc
-nohup.out
+*.out
 .vscode/launch.json
 results/
 SSV2_BB/annotation/

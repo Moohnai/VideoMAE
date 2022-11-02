@@ -5,6 +5,7 @@ import os
 # create dataframe
 train_df = {'path':[], 'label_name':[], 'label_num':[]}
 val_df = {'path':[], 'label_name':[], 'label_num':[]}
+test_df = {'path':[], 'label_name':[], 'label_num':[]}
 
 # root addresses
 root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
@@ -66,8 +67,21 @@ for i in val_label:
     val_df['label_name'].append(label_name)
     val_df['label_num'].append(label_num)
 
+test_label = pd.read_csv(os.path.join(root_add, 'labels','test-answers.csv'), sep=';', header=None)
+for _, (id, label_name) in test_label.iterrows():
+    # id, label_name = i.split(';')
+    path = os.path.join(video_mp4_root_add, str(id)+'.mp4')
+    if not os.path.exists(path):
+        continue
+    label_name = label_name.lower()
+    label_num = labels[label_name.capitalize()]
+    test_df['path'].append(path)
+    test_df['label_name'].append(label_name)
+    test_df['label_num'].append(label_num)
+
 train_df = pd.DataFrame(train_df)
 val_df = pd.DataFrame(val_df)
+test_df = pd.DataFrame(test_df)
 
 # to_csv() 
 csv_annotation_root = "/home/mona/VideoMAE/dataset/somethingsomething/annotation"
@@ -83,4 +97,10 @@ val_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "val.csv"), sep=' ',
 columns=None, header=False, index=False, index_label=None, mode='w', encoding=None, 
 compression='infer', quoting=None, quotechar='"', line_terminator=None, 
 chunksize=None, date_format=None, doublequote=True, escapechar=None, 
+decimal='.', errors='strict', storage_options=None)
+
+test_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "test.csv"), sep=' ', na_rep='', float_format=None,
+columns=None, header=False, index=False, index_label=None, mode='w', encoding=None,
+compression='infer', quoting=None, quotechar='"', line_terminator=None,
+chunksize=None, date_format=None, doublequote=True, escapechar=None,
 decimal='.', errors='strict', storage_options=None)
