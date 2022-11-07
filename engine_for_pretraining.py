@@ -6,6 +6,8 @@ import torch.nn as nn
 import utils
 from einops import rearrange
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+import wandb
+
 
 def train_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, loss_scaler, max_norm: float = 0, patch_size: int = 16, 
@@ -202,6 +204,12 @@ def train_one_epoch_BB(model: torch.nn.Module, data_loader: Iterable, optimizer:
                 weight_decay_value = group["weight_decay"]
         metric_logger.update(weight_decay=weight_decay_value)
         metric_logger.update(grad_norm=grad_norm)
+
+        # log to weights & biases
+        wandb_dict = {}
+        for key, value in metric_logger.meters.items():
+            wandb_dict["train_iter_"+key] = value.global_avg
+        wandb.log(wandb_dict, step=it)
 
         if log_writer is not None:
             log_writer.update(loss=loss_value, head="loss")

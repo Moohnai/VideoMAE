@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 
 root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
-save_root_add = "/home/mona/VideoMAE/dataset/somethingsomething/mp4_videos"
+save_root_add = "/home/mona/VideoMAE/dataset/somethingsomething/mp4_videos_BB"
 # read json bbox files
 Total_video_BB={}
 for i in range(1,5):
@@ -84,12 +84,12 @@ def data_clean(list_file, idx, verbose=True):
     output_video_file = os.path.join(save_root_add, directory.replace('.webm', '.mp4').split('/')[-1])
 
     # resize
-    # proc1 = (ffmpeg.input(directory).filter(
-    #     'scale', new_size[0],
-    #     new_size[1]).output(output_video_file).overwrite_output())
-    # p = subprocess.Popen(
-    #     ['ffmpeg'] + proc1.get_args()+
-    #     ['-hide_banner', '-loglevel', 'quiet', '-nostats'])
+    proc1 = (ffmpeg.input(directory).filter(
+        'scale', new_size[0],
+        new_size[1]).output(output_video_file).overwrite_output())
+    p = subprocess.Popen(
+        ['ffmpeg'] + proc1.get_args()+
+        ['-hide_banner', '-loglevel', 'quiet', '-nostats'])
 
 
     end_time = time.time()
@@ -144,5 +144,3 @@ if __name__ == '__main__':
     sacaledbbx_add = os.path.join('/home/mona/VideoMAE/SSV2_BB/','bounding_box_smthsmth_scaled.json')
     with open(sacaledbbx_add, "w+", encoding="utf-8") as f:
         f.write(orjson.dumps(Total_video_BB).decode("utf-8"))
-        
-

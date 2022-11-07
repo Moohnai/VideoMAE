@@ -16,7 +16,7 @@ val_df = {'path':[], 'label_name':[], 'label_num':[]}
 
 # root addresses
 root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
-video_mp4_root_add = "/home/mona/VideoMAE/dataset/somethingsomething/mp4_videos"
+video_mp4_root_add = "/home/mona/VideoMAE/dataset/somethingsomething/mp4_videos_BB"
 
 f = open(os.path.join(root_add, 'labels','labels.json'))
 labels = json.load(f)

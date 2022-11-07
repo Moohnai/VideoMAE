@@ -7,3 +7,4 @@ SSV2_BB/annotation/
 SSV2_BB/data/
 *.json
 results/
+wandb/

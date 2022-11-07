@@ -22,7 +22,7 @@ from utils import NativeScalerWithGradNormCount as NativeScaler
 from utils import  multiple_samples_collate, _load_checkpoint_for_ema
 import utils
 import modeling_finetune
-
+import wandb
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE fine-tuning and evaluation script for video classification', add_help=False)
@@ -124,7 +124,7 @@ def get_args():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # Finetuning params
-    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain/checkpoint.pth', 
+    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_BB/checkpoint-799.pth', 
                         help='finetune from checkpoint')
     # parser.add_argument('--finetune', default='', 
     #                     help='finetune from checkpoint')
@@ -148,9 +148,9 @@ def get_args():
     parser.add_argument('--sampling_rate', type=int, default= 4)
     parser.add_argument('--data_set', default='SSV2', choices=['Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_Allclass',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_BB(800)',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_Allclass',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_BB(800)',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -486,6 +486,15 @@ def main(args, ds_init):
         
 
     print(f"Start training for {args.epochs} epochs")
+    
+    # initialize wandb
+    wandb.init(
+        project="VideoMAE_BB",
+        group="BB_finetune_AR_SSV2",
+        name="BB_pretrained(800epoch)_Allclass_Init_VideoMAE_pretained",
+        config=args,
+        )
+    
     start_time = time.time()
     max_accuracy = 0.0
     for epoch in range(args.start_epoch, args.epochs):
@@ -500,6 +509,13 @@ def main(args, ds_init):
             lr_schedule_values=lr_schedule_values, wd_schedule_values=wd_schedule_values,
             num_training_steps_per_epoch=num_training_steps_per_epoch, update_freq=args.update_freq,
         )
+
+        # wandb log
+        wandb_dict = {}
+        for key, value in train_stats.meters.items():
+            wandb_dict["train_epoch_"+key] = value
+        wandb.log(wandb_dict, step=epoch)
+
         if args.output_dir and args.save_ckpt:
             if (epoch + 1) % args.save_ckpt_freq == 0 or epoch + 1 == args.epochs:
                 utils.save_model(
@@ -507,6 +523,13 @@ def main(args, ds_init):
                     loss_scaler=loss_scaler, epoch=epoch, model_ema=model_ema)
         if data_loader_val is not None:
             test_stats = validation_one_epoch(data_loader_val, model, device)
+
+            # wandb log
+            wandb_dict = {}
+            for key, value in test_stats.meters.items():
+                wandb_dict["val_epoch_"+key] = value
+            wandb.log(wandb_dict, step=epoch)
+
             print(f"Accuracy of the network on the {len(dataset_val)} val videos: {test_stats['acc1']:.1f}%")
             if max_accuracy < test_stats["acc1"]:
                 max_accuracy = test_stats["acc1"]
@@ -567,3 +590,5 @@ if __name__ == '__main__':
     if opts.output_dir:
         Path(opts.output_dir).mkdir(parents=True, exist_ok=True)
     main(opts, ds_init)
+
+    wandb.finish()

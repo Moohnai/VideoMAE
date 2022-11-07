@@ -8,6 +8,7 @@ from mixup import Mixup
 from timm.utils import accuracy, ModelEma
 import utils
 from scipy.special import softmax
+import wandb
 
 
 def train_class_batch(model, samples, target, criterion):
@@ -122,6 +123,12 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                 weight_decay_value = group["weight_decay"]
         metric_logger.update(weight_decay=weight_decay_value)
         metric_logger.update(grad_norm=grad_norm)
+
+        # log to weights & biases
+        wandb_dict = {}
+        for key, value in metric_logger.meters.items():
+            wandb_dict["train_iter_"+key] = value.global_avg
+        wandb.log(wandb_dict, step=it)
 
         if log_writer is not None:
             log_writer.update(loss=loss_value, head="loss")
