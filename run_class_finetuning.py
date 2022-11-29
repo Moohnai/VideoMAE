@@ -27,7 +27,7 @@ import wandb
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE fine-tuning and evaluation script for video classification', add_help=False)
     parser.add_argument('--batch_size', default=6, type=int)
-    parser.add_argument('--epochs', default=50, type=int)
+    parser.add_argument('--epochs', default=200, type=int)
     parser.add_argument('--update_freq', default=1, type=int)
     parser.add_argument('--save_ckpt_freq', default=10, type=int)
 
@@ -124,7 +124,7 @@ def get_args():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # Finetuning params
-    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_BB/checkpoint-799.pth', 
+    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/VideoMAE_finetune_checkpoint_modelzoo/checkpoint.pth', 
                         help='finetune from checkpoint')
     # parser.add_argument('--finetune', default='', 
     #                     help='finetune from checkpoint')
@@ -135,7 +135,7 @@ def get_args():
     parser.set_defaults(use_mean_pooling=True)
     parser.add_argument('--use_cls', action='store_false', dest='use_mean_pooling')
 
-    # Dataset parameters
+    # Dataset parameters99
     parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation', type=str,
                         help='dataset path')
     parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/val.csv', type=str,
@@ -148,9 +148,9 @@ def get_args():
     parser.add_argument('--sampling_rate', type=int, default= 4)
     parser.add_argument('--data_set', default='SSV2', choices=['Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_BB(800)',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_only_test_modelzoo',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_BB(800)',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_only_test_modelzoo',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -490,8 +490,8 @@ def main(args, ds_init):
     # initialize wandb
     wandb.init(
         project="VideoMAE_BB",
-        group="BB_finetune_AR_SSV2",
-        name="BB_pretrained(800epoch)_Allclass_Init_VideoMAE_pretained",
+        group="Original_finetune_AR_SSV2",
+        name="finetune_Allclass_Init_VideoMAE_pretained_200_epoch",
         config=args,
         )
     
@@ -512,7 +512,7 @@ def main(args, ds_init):
 
         # wandb log
         wandb_dict = {}
-        for key, value in train_stats.meters.items():
+        for key, value in train_stats.items():
             wandb_dict["train_epoch_"+key] = value
         wandb.log(wandb_dict, step=epoch)
 
@@ -526,7 +526,7 @@ def main(args, ds_init):
 
             # wandb log
             wandb_dict = {}
-            for key, value in test_stats.meters.items():
+            for key, value in test_stats.items():
                 wandb_dict["val_epoch_"+key] = value
             wandb.log(wandb_dict, step=epoch)
 

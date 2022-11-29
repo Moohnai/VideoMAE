@@ -261,7 +261,7 @@ def main(args):
         )
         # wandb log
         wandb_dict = {}
-        for key, value in train_stats.meters.items():
+        for key, value in train_stats.items():
             wandb_dict["train_epoch_"+key] = value
         wandb.log(wandb_dict, step=epoch)
 

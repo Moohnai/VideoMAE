@@ -125,10 +125,10 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         metric_logger.update(grad_norm=grad_norm)
 
         # log to weights & biases
-        wandb_dict = {}
-        for key, value in metric_logger.meters.items():
-            wandb_dict["train_iter_"+key] = value.global_avg
-        wandb.log(wandb_dict, step=it)
+        # wandb_dict = {}
+        # for key, value in metric_logger.meters.items():
+        #     wandb_dict["train_iter_"+key] = value.global_avg
+        # wandb.log(wandb_dict, step=it)
 
         if log_writer is not None:
             log_writer.update(loss=loss_value, head="loss")

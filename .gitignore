@@ -8,3 +8,5 @@ SSV2_BB/data/
 *.json
 results/
 wandb/
+dataset/
+scripts/data/Epic-kitchen/data/
