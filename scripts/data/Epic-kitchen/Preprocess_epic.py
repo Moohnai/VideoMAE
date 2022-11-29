@@ -103,6 +103,9 @@ start_frames_train = []
 stop_frames_train = []
 video_paths_train = []
 IDs_train = []
+start_timestamps_train = []
+stop_timestamps_train = []
+
 
 for i, item in data_train.iterrows():
     IDs_train.append(i)
@@ -114,6 +117,10 @@ for i, item in data_train.iterrows():
     stop_frames_train.append(stop_frame)
     video_path = video_root_add + "/" + f"{participant_id}" + "/videos" + "/" + f"{video_id}" + ".MP4"
     video_paths_train.append(video_path)
+    start_timestamp = item["start_timestamp"]
+    start_timestamps_train.append(start_timestamp)
+    stop_timestamp = item["stop_timestamp"]
+    stop_timestamps_train.append(stop_timestamp)
 
 
 
@@ -125,6 +132,8 @@ start_frames_val = []
 stop_frames_val = []
 video_paths_val = []
 IDs_val = []
+start_timestamps_val = []
+stop_timestamps_val = []
 
 for i, item in data_val.iterrows():
     IDs_val.append(i)
@@ -136,6 +145,10 @@ for i, item in data_val.iterrows():
     stop_frames_val.append(stop_frame)
     video_path = video_root_add + "/" + f"{participant_id}" + "/videos" + "/" + f"{video_id}" + ".MP4"
     video_paths_val.append(video_path)
+    start_timestamp = item["start_timestamp"]
+    start_timestamps_val.append(start_timestamp)
+    stop_timestamp = item["stop_timestamp"]
+    stop_timestamps_val.append(stop_timestamp)
 
 
 
