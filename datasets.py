@@ -2,7 +2,7 @@ import os
 from torchvision import transforms
 from transforms import *
 from masking_generator import TubeMaskingGenerator
-from kinetics import VideoClsDataset, VideoMAE, VideoMAE_BB
+from kinetics import VideoClsDataset, VideoMAE, VideoMAE_BB, VideoMAE_BB_no_global_union
 from ssv2 import SSVideoClsDataset
 
 
@@ -64,6 +64,40 @@ class DataAugmentationForVideoMAE_BB(object):
         return repr
 
 
+
+class DataAugmentationForVideoMAE_BB_no_global_union(object):
+    def __init__(self, args):
+        self.input_mean = [0.485, 0.456, 0.406]  # IMAGENET_DEFAULT_MEAN
+        self.input_std = [0.229, 0.224, 0.225]  # IMAGENET_DEFAULT_STD
+        normalize = GroupNormalize(self.input_mean, self.input_std)
+        self.train_augmentation = GroupMultiScaleCrop_BB_no_global_union(args.input_size, [1, .875, .75, .66])
+        self.transform = transforms.Compose([                            
+            self.train_augmentation,
+            Stack(roll=False),
+            ToTorchFormatTensor(div=True),
+            # ToTorchFormatTensor(div=False),
+            normalize,
+        ])
+        if args.mask_type == 'tube':
+            self.masked_position_generator = TubeMaskingGenerator(
+                args.window_size, args.mask_ratio
+            )
+
+    def __call__(self, images):
+        process_data, process_bbx = self.transform(images)
+        return process_data, process_bbx, self.masked_position_generator()
+
+    def __repr__(self):
+        repr = "(DataAugmentationForVideoMAE,\n"
+        repr += "  transform = %s,\n" % str(self.transform)
+        repr += "  Masked position generator = %s,\n" % str(self.masked_position_generator)
+        repr += ")"
+        return repr
+
+
+
+
+
 def build_pretraining_dataset(args):
     transform = DataAugmentationForVideoMAE(args)
     dataset = VideoMAE(
@@ -102,6 +136,29 @@ def build_pretraining_dataset_BB(args):
     # dataset = build_dataset(is_train=True, test_mode=False, args=args)
     print("Data Aug = %s" % str(transform))
     return dataset
+
+
+
+
+def build_pretraining_dataset_BB_no_global_union(args):
+    transform = DataAugmentationForVideoMAE_BB_no_global_union(args)
+    dataset = VideoMAE_BB_no_global_union(
+        root=None,
+        setting=args.data_path,
+        video_ext='mp4',
+        is_color=True,
+        modality='rgb',
+        new_length=args.num_frames,
+        new_step=args.sampling_rate,
+        transform=transform,
+        temporal_jitter=False,
+        video_loader=True,
+        use_decord=True,
+        lazy_init=False)
+    # dataset = build_dataset(is_train=True, test_mode=False, args=args)
+    print("Data Aug = %s" % str(transform))
+    return dataset
+
 
 
 def build_dataset(is_train, test_mode, args):

@@ -115,55 +115,62 @@ def Epic_action_data_creator(start_frames, stop_frames, video_path, EPIC_100, i)
     elif "val" in EPIC_100:
         train_or_val = "val"
 
-    if (
-        os.path.exists(
-            f"/mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_{train_or_val}/video_{i}.MP4"
-        )
-        == True
-    ):
-        print(f"video_{train_or_val}_{i} exists")
-        return
-    else:
-        out_dir = os.path.join(EPIC_100, f"video_{i}.MP4")
-        command = f"ffmpeg -i {video_path} -vcodec copy -acodec copy -ss {start_frames}00 -to {stop_frames}00 {out_dir} -loglevel quiet"
-        os.system(command)
+    # if (
+    #     os.path.exists(
+    #         f"/mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_{train_or_val}/video_{i}.MP4"
+    #     )
+    #     == True
+    # ):
+    #     print(f"video_{train_or_val}_{i} exists")
+    #     return
+    # else:
+    #     out_dir = os.path.join(EPIC_100, f"video_{i}.MP4")
+    #     command = f"ffmpeg -i {video_path} -vcodec copy -acodec copy -ss {start_frames}00 -to {stop_frames}00 {out_dir} -loglevel quiet"
+    #     os.system(command)
+
+    out_dir = f"video_{i}.MP4"
+    command = f"ffmpeg -i {video_path} -vcodec copy -acodec copy -ss {start_frames}00 -to {stop_frames}00 {out_dir} -loglevel quiet"
+    os.system(command)
+    decord_vr = decord.VideoReader(out_dir, num_threads=1)
+    duration = len(decord_vr)
+    video_data = decord_vr.get_batch(list(range(duration))).asnumpy()
 
     print(f"video_{train_or_val}_{i}.MP4 successfully saved (train)")
 
 
-# Epic_action_data_creator (start_timestamps_train[10000],stop_timestamps_train[10000], video_paths_train[10000],EPIC_100_train[10000], IDs_train[10000])
+Epic_action_data_creator (start_timestamps_train[0],stop_timestamps_train[0], video_paths_train[0],EPIC_100_train[0], IDs_train[0])
 
-n_tasks = 20
-print("Processing training videos...")
-with Pool(n_tasks) as p:
-    p.starmap(
-        Epic_action_data_creator,
-        [
-            (start_frames, stop_frames, video_paths, EPIC_100, i)
-            for (start_frames, stop_frames, video_paths, EPIC_100, i) in zip(
-                start_timestamps_train,
-                stop_timestamps_train,
-                video_paths_train,
-                EPIC_100_train,
-                IDs_train,
-            )
-        ],
-    )
+# n_tasks = 20
+# print("Processing training videos...")
+# with Pool(n_tasks) as p:
+#     p.starmap(
+#         Epic_action_data_creator,
+#         [
+#             (start_frames, stop_frames, video_paths, EPIC_100, i)
+#             for (start_frames, stop_frames, video_paths, EPIC_100, i) in zip(
+#                 start_timestamps_train,
+#                 stop_timestamps_train,
+#                 video_paths_train,
+#                 EPIC_100_train,
+#                 IDs_train,
+#             )
+#         ],
+#     )
 
-print("Processing validation videos...")
-with Pool(n_tasks) as p:
-    p.starmap(
-        Epic_action_data_creator,
-        [
-            (start_frames, stop_frames, video_paths, EPIC_100, i)
-            for (start_frames, stop_frames, video_paths, EPIC_100, i) in zip(
-                start_timestamps_val,
-                stop_timestamps_val,
-                video_paths_val,
-                EPIC_100_val,
-                IDs_val,
-            )
-        ],
-    )
+# print("Processing validation videos...")
+# with Pool(n_tasks) as p:
+#     p.starmap(
+#         Epic_action_data_creator,
+#         [
+#             (start_frames, stop_frames, video_paths, EPIC_100, i)
+#             for (start_frames, stop_frames, video_paths, EPIC_100, i) in zip(
+#                 start_timestamps_val,
+#                 stop_timestamps_val,
+#                 video_paths_val,
+#                 EPIC_100_val,
+#                 IDs_val,
+#             )
+#         ],
+#     )
 
 print("Done!")

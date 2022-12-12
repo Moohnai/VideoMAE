@@ -14,9 +14,14 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 
 root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
-path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB(800)/*.txt'
+# path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB(800)/*.txt'
+path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB_VideoMAE_scratch(50)/*.txt'
+
 files = glob.glob(path, recursive=True)
 files = [file for file in files if 'log' not in file]
+
+
+plot_name = files[0].split('/')[-2].split('.')[0]
 
 label = []
 pred = []
@@ -116,12 +121,27 @@ def plot_confusion_matrix(cm,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label\naccuracy={:0.4f}; misclass={:0.4f}'.format(accuracy, misclass))
-    plt.savefig('a.png')#, dpi=300)
+    plt.savefig(f'{plot_name}.png', dpi=300)
 
 
-plot_confusion_matrix(cm = confusion_matrix(label,pred), 
+cm = confusion_matrix(label, pred)
+## analysis of the confusion matrix
+
+# print classes with the highest number of errors
+errors = np.sum(cm, axis=1) - np.diag(cm)
+idx = np.argsort(errors)
+idx = idx[::-1]
+for i in idx:
+    print('class %s: %d errors (%.2f%%)' % (class_names[i], errors[i], 100.*errors[i]/np.sum(cm)))
+
+
+plot_confusion_matrix(cm = cm, 
                     normalize    = True,
                     target_names =  [str(num) for num in list(range(len(class_names)))],
                     title        = "Confusion Matrix")
 
 
+# plot_confusion_matrix(cm = confusion_matrix(label,pred), 
+#                     normalize    = True,
+#                     target_names =  [str(num) for num in list(range(len(class_names)))],
+#                     title        = "Confusion Matrix")
