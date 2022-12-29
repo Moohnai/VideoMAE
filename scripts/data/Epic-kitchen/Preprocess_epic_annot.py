@@ -117,7 +117,7 @@ def Epic_detection_annot_creator(start_frames, stop_frames, annot_path, EPIC_100
 
     if (
         os.path.exists(
-            f"/mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_hand_objects_{train_or_val}/detection_{i}.pkl"
+            f"{EPIC_100}/detection_{i}.pkl"
         )
         == True
     ):
@@ -139,41 +139,42 @@ def Epic_detection_annot_creator(start_frames, stop_frames, annot_path, EPIC_100
         pickle.dump({"objects" : detected_objects_BB, "hands":detected_hands_BB}, open(out_dir, "wb"))
 
     print(f"detection_{train_or_val}_{i}.pkl successfully saved")
+    
 
+# i = 98
+# Epic_detection_annot_creator(start_frames_train[i],stop_frames_train[i], annot_paths_train[i],EPIC_100_hand_objects_train[i], IDs_train[i])
 
-Epic_detection_annot_creator(start_frames_train[10000],stop_frames_train[10000], annot_paths_train[10000],EPIC_100_hand_objects_train[10000], IDs_train[10000])
+n_tasks = 20
+print("Processing training videos...")
+with Pool(n_tasks) as p:
+    p.starmap(
+        Epic_detection_annot_creator,
+        [
+            (start_frames, stop_frames, annot_paths, EPIC_100, i)
+            for (start_frames, stop_frames, annot_paths, EPIC_100, i) in zip(
+                start_frames_train,
+                stop_frames_train,
+                annot_paths_train,
+                EPIC_100_hand_objects_train,
+                IDs_train,
+            )
+        ],
+    )
 
-# n_tasks = 20
-# print("Processing training videos...")
-# with Pool(n_tasks) as p:
-#     p.starmap(
-#         Epic_detection_annot_creator,
-#         [
-#             (start_frames, stop_frames, annot_paths, EPIC_100, i)
-#             for (start_frames, stop_frames, annot_paths, EPIC_100, i) in zip(
-#                 start_frames_train,
-#                 stop_frames_train,
-#                 annot_paths_train,
-#                 EPIC_100_hand_objects_train,
-#                 IDs_train,
-#             )
-#         ],
-#     )
-
-# print("Processing validation videos...")
-# with Pool(n_tasks) as p:
-#     p.starmap(
-#         Epic_detection_annot_creator,
-#         [
-#             (start_frames, stop_frames, annot_paths, EPIC_100, i)
-#             for (start_frames, stop_frames, annot_paths, EPIC_100, i) in zip(
-#                 start_frames_val,
-#                 stop_frames_val,
-#                 annot_paths_val,
-#                 EPIC_100_hand_objects_val,
-#                 IDs_val,
-#             )
-#         ],
-#     )
+print("Processing validation videos...")
+with Pool(n_tasks) as p:
+    p.starmap(
+        Epic_detection_annot_creator,
+        [
+            (start_frames, stop_frames, annot_paths, EPIC_100, i)
+            for (start_frames, stop_frames, annot_paths, EPIC_100, i) in zip(
+                start_frames_val,
+                stop_frames_val,
+                annot_paths_val,
+                EPIC_100_hand_objects_val,
+                IDs_val,
+            )
+        ],
+    )
 
 print("Done!")

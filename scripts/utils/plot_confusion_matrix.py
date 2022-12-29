@@ -15,7 +15,9 @@ import numpy as np
 
 root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
 # path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB(800)/*.txt'
-path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB_VideoMAE_scratch(50)/*.txt'
+# path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB_VideoMAE_scratch(50)/*.txt'
+path = r'/home/mona/VideoMAE/results/finetune_Allclass_from_coppola/*.txt'
+
 
 files = glob.glob(path, recursive=True)
 files = [file for file in files if 'log' not in file]
@@ -46,6 +48,9 @@ for file in files:
 f = open(os.path.join(root_add, 'labels','labels.json'))
 labels = json.load(f)
 class_names = list(labels.keys())
+# for i in range (len(class_names)):
+#     print (f"{i} : {class_names[i]}")
+
 
 
 def plot_confusion_matrix(cm,
@@ -125,14 +130,39 @@ def plot_confusion_matrix(cm,
 
 
 cm = confusion_matrix(label, pred)
-## analysis of the confusion matrix
 
 # print classes with the highest number of errors
 errors = np.sum(cm, axis=1) - np.diag(cm)
-idx = np.argsort(errors)
+error_percentage = errors / np.sum(cm, axis=1)
+# sort the errors based on the percentage of errors
+idx = np.argsort(error_percentage)
 idx = idx[::-1]
 for i in idx:
-    print('class %s: %d errors (%.2f%%)' % (class_names[i], errors[i], 100.*errors[i]/np.sum(cm)))
+    print('class "%s": %d errors (%.2f%%) with %d samples with ID: %s' % (class_names[i], errors[i], 100.*errors[i]/np.sum(cm[i,:]), np.sum(cm[i,:]), i))
+
+# ## analysis of the confusion matrix fo each class (Debugging)(3 most erroe : 109,47,12)
+cm_norm = confusion_matrix(label, pred).astype('float') / confusion_matrix(label, pred).sum(axis=1)[:, np.newaxis]
+for i in idx[0:10]:
+    print('*'*50)
+    print('class "%s": %d errors (%.2f%%) with ID: %s' % (class_names[i], errors[i], 100.*errors[i]/np.sum(cm[i,:]), i))
+    cls = cm_norm[i, :] 
+    cls_idx = np.argsort(cls)
+    cls_idx = cls_idx[::-1]
+    print('most confused classes:')
+    for j in cls_idx[0:5]:
+        if j != i:
+            print('  class "%s": %d errors (%.2f%%) with ID: %s' % (class_names[j], errors[j], 100.*errors[j]/np.sum(cm[j,:]), j))
+
+# # check single class
+# i = 111
+# print('class "%s": %d errors (%.2f%%) with ID: %s' % (class_names[i], errors[i], 100.*errors[i]/np.sum(cm[i,:]), i))
+# cls = cm_norm[i, :] 
+# cls_idx = np.argsort(cls)
+# cls_idx = cls_idx[::-1]
+# print('most confused classes:')
+# for j in cls_idx[0:5]:
+#     if j != i:
+#         print('  class "%s": %d errors (%.2f%%) with ID: %s' % (class_names[j], errors[j], 100.*errors[j]/np.sum(cm[j,:]), j))
 
 
 plot_confusion_matrix(cm = cm, 

@@ -4,6 +4,7 @@ from transforms import *
 from masking_generator import TubeMaskingGenerator
 from kinetics import VideoClsDataset, VideoMAE, VideoMAE_BB, VideoMAE_BB_no_global_union
 from ssv2 import SSVideoClsDataset
+from epic_kitchens import EpicVideoClsDataset
 
 
 class DataAugmentationForVideoMAE(object):
@@ -225,6 +226,41 @@ def build_dataset(is_train, test_mode, args):
             new_width=320,
             args=args)
         nb_classes = args.nb_classes
+
+    
+    elif args.data_set == 'Epic-Kitchens':
+        mode = None
+        anno_path = None
+        if is_train is True:
+            mode = 'train'
+            anno_path = os.path.join(args.data_path, 'train.csv')
+            # anno_path = args.data_path
+        elif test_mode is True:
+            mode = 'test'
+            anno_path = os.path.join(args.data_path, 'val.csv') 
+            
+        else:  
+            mode = 'validation'
+            anno_path = os.path.join(args.data_path, 'val.csv') 
+            # anno_path = args.eval_data_path 
+
+
+        dataset = EpicVideoClsDataset(
+            anno_path=anno_path,
+            data_path='/',
+            mode=mode,
+            clip_len=args.num_frames,
+            num_segment=args.num_frames,
+            test_num_segment=args.test_num_segment,
+            test_num_crop=args.test_num_crop,
+            num_crop=1 if not test_mode else 3,
+            keep_aspect_ratio=True,
+            crop_size=args.input_size,
+            short_side_size=args.short_side_size,
+            new_height=256,
+            new_width=320,
+            args=args)
+        nb_classes = args.nb_classes        
 
     elif args.data_set == 'UCF101':
         mode = None

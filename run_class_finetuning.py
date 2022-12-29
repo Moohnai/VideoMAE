@@ -27,7 +27,7 @@ import wandb
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE fine-tuning and evaluation script for video classification', add_help=False)
     parser.add_argument('--batch_size', default=6, type=int)
-    parser.add_argument('--epochs', default=200, type=int)
+    parser.add_argument('--epochs', default=50, type=int)
     parser.add_argument('--update_freq', default=1, type=int)
     parser.add_argument('--save_ckpt_freq', default=10, type=int)
 
@@ -124,10 +124,10 @@ def get_args():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # Finetuning params
-    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/VideoMAE_finetune_checkpoint_modelzoo/checkpoint.pth', 
-                        help='finetune from checkpoint')
-    # parser.add_argument('--finetune', default='', 
+    # parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens/?????????checkpoint.pth', 
     #                     help='finetune from checkpoint')
+    parser.add_argument('--finetune', default='', 
+                        help='finetune from checkpoint')
     parser.add_argument('--model_key', default='model|module', type=str)
     parser.add_argument('--model_prefix', default='', type=str)
     parser.add_argument('--init_scale', default=0.001, type=float)
@@ -136,21 +136,21 @@ def get_args():
     parser.add_argument('--use_cls', action='store_false', dest='use_mean_pooling')
 
     # Dataset parameters99
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb', type=str,
                         help='dataset path')
-    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/val.csv', type=str,
+    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/val.csv', type=str,
                         help='dataset path for evaluation')
-    parser.add_argument('--nb_classes', default=174, type=int,
+    parser.add_argument('--nb_classes', default=97, type=int,
                         help='number of the classification types')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_segments', type=int, default= 1)
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 4)
-    parser.add_argument('--data_set', default='SSV2', choices=['Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
+    parser.add_argument('--data_set', default='Epic-Kitchens', choices=['SSV2', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_only_test_modelzoo',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_original_Epic_kitchens',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_Allclass_only_test_modelzoo',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_original_Epic_kitchens',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -489,9 +489,9 @@ def main(args, ds_init):
     
     # initialize wandb
     wandb.init(
-        project="VideoMAE_BB",
-        group="Original_finetune_AR_SSV2",
-        name="finetune_Allclass_Init_VideoMAE_pretained_200_epoch",
+        project="VideoMAE_original",
+        group="Original_finetune_Epic_Kitchens",
+        name="finetune_Allclass_Init_VideoMAE_pretained_50_epoch",
         config=args,
         )
     

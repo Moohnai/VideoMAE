@@ -14,6 +14,8 @@ from engine_for_pretraining import train_one_epoch
 from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
 import modeling_pretrain
+import wandb
+
 
 
 def get_args():
@@ -80,14 +82,14 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/train.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb_train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 2)
-    parser.add_argument('--output_dir', default='./results',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='./results',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -107,7 +109,7 @@ def get_args():
     parser.set_defaults(pin_mem=True)
 
     # dataset name
-    parser.add_argument('--data_set', default='SSV2', type=str, help='Other dataset options is: Kinetics-400, UCF101, HMDB51')
+    parser.add_argument('--data_set', default='Epic-Kitchens', type=str, help='Other dataset options is: SSV2, Kinetics-400, UCF101, HMDB51')
     parser.add_argument('--reprob', default=0.5, type=float, help='Probability that the Random Erasing operation will be performed.')
     parser.add_argument('--remode', default='const', type=str, help="mode: pixel color mode, one of 'const', 'rand', or 'pixel. \
         'const' - erase block is constant color of 0 for all channels \
@@ -231,6 +233,15 @@ def main(args):
         args=args, model=model, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
     torch.cuda.empty_cache()
     print(f"Start training for {args.epochs} epochs")
+
+    # initialize wandb
+    wandb.init(
+        project="VideoMAE_original",
+        group="pretrained",
+        name="800_epochs_VideoMAE_scratch_Epic_Kitchens",
+        config=args,
+        )
+
     start_time = time.time()
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -247,6 +258,13 @@ def main(args):
             patch_size=patch_size[0],
             normlize_target=args.normlize_target,
         )
+
+        # wandb log
+        wandb_dict = {}
+        for key, value in train_stats.items():
+            wandb_dict["train_epoch_"+key] = value
+        wandb.log(wandb_dict, step=epoch)
+
         if args.output_dir:
             if (epoch + 1) % args.save_ckpt_freq == 0 or epoch + 1 == args.epochs:
                 utils.save_model(
@@ -272,3 +290,4 @@ if __name__ == '__main__':
     if opts.output_dir:
         Path(opts.output_dir).mkdir(parents=True, exist_ok=True)
     main(opts)
+    wandb.finish()
