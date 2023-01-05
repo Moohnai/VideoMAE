@@ -81,14 +81,14 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/train_BB.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 2)
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_global_union_scratch',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_global_union_scratch_Epic_Kitchen',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_global_union_scratch',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_global_union_scratch_Epic_Kitchen',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -239,7 +239,7 @@ def main(args):
     wandb.init(
         project="VideoMAE_BB_without_global_union",
         group="BB_pretrained",
-        name="BB_800_epochs_VideoMAE_scratch",
+        name="BB_without_GU_800_epochs_VideoMAE_scratch_Epic_Kitchens",
         config=args,
         )
 

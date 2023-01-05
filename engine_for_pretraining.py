@@ -257,12 +257,12 @@ def train_one_epoch_BB_no_global_union(model: torch.nn.Module, data_loader: Iter
         bool_masked_pos = bool_masked_pos.to(device, non_blocking=True).flatten(1).to(torch.bool)
 
         #create mask on video based on the bbox
+        video_masks= torch.zeros_like(videos)
         for v in range(videos.shape[0]):
-            video = torch.zeros_like(videos[v])
             video_bbox_region = bbox[v]
-            for frame_index in range(video.shape[1]):
-                video [:,frame_index, int(video_bbox_region[frame_index,1]):int(video_bbox_region[frame_index,3]), int(video_bbox_region[frame_index,0]):int(video_bbox_region[frame_index,2])] = 1 # y , x
-            videos[v] = videos[v] * video
+            for frame_index in range(videos.shape[1]):
+                video_masks [:,frame_index, int(video_bbox_region[frame_index,1]):int(video_bbox_region[frame_index,3]), int(video_bbox_region[frame_index,0]):int(video_bbox_region[frame_index,2])] = 1 # y , x
+            
         # import cv2
         # import numpy as np
         # frame = videos[1][:,-1].cpu().numpy().astype(np.uint8).transpose(1, 2, 0)
@@ -284,14 +284,21 @@ def train_one_epoch_BB_no_global_union(model: torch.nn.Module, data_loader: Iter
                     ) / (videos_squeeze.var(dim=-2, unbiased=True, keepdim=True).sqrt() + 1e-6)
                 # we find that the mean is about 0.48 and standard deviation is about 0.08.
                 videos_patch = rearrange(videos_norm, 'b n p c -> b n (p c)')
+                # update video masks 
+                video_masks = rearrange(video_masks, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2) c', p0=2, p1=patch_size, p2=patch_size)
+                video_masks = rearrange(video_masks, 'b n p c -> b n (p c)')
             else:
                 videos_patch = rearrange(unnorm_videos, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2 c)', p0=2, p1=patch_size, p2=patch_size)
+                # update video masks 
+                video_masks = rearrange(video_masks, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2 c)', p0=2, p1=patch_size, p2=patch_size)
 
             B, _, C = videos_patch.shape
             labels = videos_patch[bool_masked_pos].reshape(B, -1, C)
+            # create label mask for applying bbox
+            mask_labels = video_masks[bool_masked_pos].reshape(B, -1, C)
 
             # find zero elements in labels
-            labels_mask_loc = torch.where(labels==0)
+            labels_mask_loc = torch.where(mask_labels==0)
             labels_mask = torch.ones_like(labels)
             labels_mask[labels_mask_loc[0], labels_mask_loc[1], labels_mask_loc[2]] = 0
 

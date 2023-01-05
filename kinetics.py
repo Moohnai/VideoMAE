@@ -898,9 +898,15 @@ class VideoMAE_BB_no_global_union(torch.utils.data.Dataset):
         self.transform = transform
         self.lazy_init = lazy_init
         Total_video_BB_no_global_union={}
-        with open('/home/mona/VideoMAE/SSV2_BB/bounding_box_smthsmth_scaled.json', "r", encoding="utf-8") as f:
+        print("Loading bbox json file...")
+        with open('../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/mp4_videos/EPIC_100_BB_train.json', "r", encoding="utf-8") as f:
             Total_video_BB = orjson.loads(f.read())
         self.bb_data = Total_video_BB
+
+        # SSV2
+        # with open('/home/mona/VideoMAE/SSV2_BB/bounding_box_smthsmth_scaled.json', "r", encoding="utf-8") as f:
+        #     Total_video_BB = orjson.loads(f.read())
+        # self.bb_data = Total_video_BB
 
 
         if not self.lazy_init:
