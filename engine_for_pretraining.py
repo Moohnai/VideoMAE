@@ -133,12 +133,13 @@ def train_one_epoch_BB(model: torch.nn.Module, data_loader: Iterable, optimizer:
         videos = videos.to(device, non_blocking=True)
         bool_masked_pos = bool_masked_pos.to(device, non_blocking=True).flatten(1).to(torch.bool)
 
+
         #create mask on video based on the bbox
+        video_masks = torch.zeros_like(videos)
         for v in range(videos.shape[0]):
-            video = torch.zeros_like(videos[v])
             video_bbox_region = bbox[v]
-            video [:,:, int(video_bbox_region[1]):int(video_bbox_region[3]), int(video_bbox_region[0]):int(video_bbox_region[2])] = 1 # y , x
-            videos[v] = videos[v] * video
+            video_masks[v] [:,:, int(video_bbox_region[1]):int(video_bbox_region[3]), int(video_bbox_region[0]):int(video_bbox_region[2])] = 1 # y , x
+
 
         with torch.no_grad():
             # calculate the predict label
@@ -155,14 +156,23 @@ def train_one_epoch_BB(model: torch.nn.Module, data_loader: Iterable, optimizer:
                     ) / (videos_squeeze.var(dim=-2, unbiased=True, keepdim=True).sqrt() + 1e-6)
                 # we find that the mean is about 0.48 and standard deviation is about 0.08.
                 videos_patch = rearrange(videos_norm, 'b n p c -> b n (p c)')
+                # update video masks 
+                video_masks = rearrange(video_masks, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2) c', p0=2, p1=patch_size, p2=patch_size)
+                video_masks = rearrange(video_masks, 'b n p c -> b n (p c)')
+  
             else:
                 videos_patch = rearrange(unnorm_videos, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2 c)', p0=2, p1=patch_size, p2=patch_size)
+                # update video masks 
+                video_masks = rearrange(video_masks, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2 c)', p0=2, p1=patch_size, p2=patch_size)
 
             B, _, C = videos_patch.shape
             labels = videos_patch[bool_masked_pos].reshape(B, -1, C)
+            # create label mask for applying bbox
+            labels_mask = video_masks[bool_masked_pos].reshape(B, -1, C)
+
 
             # find zero elements in labels
-            labels_mask_loc = torch.where(labels==0)
+            labels_mask_loc = torch.where(labels_mask==0)
             labels_mask = torch.ones_like(labels)
             labels_mask[labels_mask_loc[0], labels_mask_loc[1], labels_mask_loc[2]] = 0
 
@@ -205,11 +215,11 @@ def train_one_epoch_BB(model: torch.nn.Module, data_loader: Iterable, optimizer:
         metric_logger.update(weight_decay=weight_decay_value)
         metric_logger.update(grad_norm=grad_norm)
 
-        # log to weights & biases
-        wandb_dict = {}
-        for key, value in metric_logger.meters.items():
-            wandb_dict["train_iter_"+key] = value.global_avg
-        wandb.log(wandb_dict, step=it)
+        # # log to weights & biases
+        # wandb_dict = {}
+        # for key, value in metric_logger.meters.items():
+        #     wandb_dict["train_iter_"+key] = value.global_avg
+        # wandb.log(wandb_dict, step=it)
 
         if log_writer is not None:
             log_writer.update(loss=loss_value, head="loss")
