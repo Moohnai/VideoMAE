@@ -7,14 +7,14 @@ import orjson
 import decord
 import ffmpeg
 from joblib import delayed, Parallel  # install psutil library to manage memory leak
-from tqdm import tqdm
+# from tqdm import tqdm
 import pandas as pd
 # from https://github.com/epic-kitchens/epic-kitchens-100-hand-object-bboxes.git install epic-kitchens library
-from epic_kitchens.hoa import load_detections, DetectionRenderer
+# from epic_kitchens.hoa import load_detections, DetectionRenderer
 import PIL.Image
 import pickle
 import cv2
-import torch
+# import torch
 from PIL import Image
 import numpy as np
 from pathlib import Path
@@ -23,53 +23,24 @@ import re
 # from ipywidgets import interact, IntSlider, Layout
 
 
+# Define path
 
-# #annot visualization
-# frames_add = "../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/P01/rgb_frames/P01_109"
-# annot_add =  "../../mnt/welles/scratch/datasets/Epic-kitchen/annotation/hand-objects/P01/P01_109.pkl"
-
-# video_detections = load_detections(annot_add)
-
-# class LazyFrameLoader:
-#     def __init__(self, path: Union[Path, str], frame_template: str = 'frame_{:010d}.jpg'):
-#         self.path = Path(path)
-#         self.frame_template = frame_template
-        
-#     def __getitem__(self, idx: int) -> PIL.Image.Image:
-#         return PIL.Image.open(str(self.path / self.frame_template.format(idx + 1)))
-           
-# # video_id = 'P01_09'
-# # participant_id = video_id[:3]           
-# frames = LazyFrameLoader(frames_add)
-# renderer = DetectionRenderer(hand_threshold=0.1, object_threshold=0.1)
-# renderer.render_detections(frames[0], video_detections[0])
+root_add = "../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition"
+save_root_add = "../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/mp4_videos"
+# Define videos and annotations path
+EPIC_100_train = root_add + "/" + "train"
+EPIC_100_val =  root_add + "/" + "validation"
+EPIC_100_hand_objects_train = ("../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_hand_objects_train")
+EPIC_100_hand_objects_val = ("../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_hand_objects_val")
 
 
+data_train = pd.read_csv("Epic_kitchen/EPIC_100_train.csv")
+data_val = pd.read_csv("Epic_kitchen/EPIC_100_validation.csv")
 
 
-# # Define path
-# root_add = "/home/mona/VideoMAE/dataset/Epic_kitchen/"
-# save_root_add = "/home/mona/VideoMAE/dataset/Epic_kitchen/mp4_videos_BB"
-# # Define videos and annotations path
-# EPIC_100_train = ("../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_train_new")
-# EPIC_100_val = ("../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_val")
-# EPIC_100_hand_objects_train = ("../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_hand_objects_train")
-# EPIC_100_hand_objects_val = ("../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_hand_objects_val")
-
-
-# data_train = pd.read_csv("VideoMAE/dataset/Epic_kitchen/annotation/EPIC_100_train.csv")
-# data_val = pd.read_csv("VideoMAE/dataset/Epic_kitchen/annotation/EPIC_100_validation.csv")
-
-
-# if not os.path.exists(save_root_add):
-#     os.makedirs(save_root_add)
-
-# if not os.path.exists(root_add + "/" + "EPIC_100_hand_objects_train_modified"):
-#     os.makedirs(root_add + "/" + "EPIC_100_hand_objects_train_modified")
-
-# if not os.path.exists(root_add + "/" + "EPIC_100_hand_objects_val_modified"):
-#     os.makedirs(root_add + "/" + "EPIC_100_hand_objects_val_modified")
-
+if not os.path.exists(save_root_add):
+    os.makedirs(save_root_add+ "/" + "train")
+    os.makedirs(save_root_add+ "/" + "validation")
 
 # #fuction for visualizing image with bounding box
 # def visual_bbx (images, bboxes):
@@ -108,117 +79,152 @@ import re
 
 
 
-# def data_clean(video_root_path, idx, BB_root_path, verbose=True):
+def data_clean(video_root_path, idx, verbose=False):
 
-#     # prepare
-#     video_ext = 'mp4'
+    # prepare
+    video_ext = 'mp4'
 
-#     # process video & save
-#     start_time = time.time()
+    # pick train or val
+    train_flag = 'train' if 'train' in video_root_path else 'validation'
 
-#     directory = os.path.join(video_root_path, f"video_{idx}.MP4" )
-#     if '.' in directory.split('/')[-1]:
-#         video_name = directory
-#     else:
-#         video_name = '{}.{}'.format(directory, video_ext)
+    # process video & save
+    start_time = time.time()
 
-#     try:
-#         # try load video
+    directory = os.path.join(video_root_path, f"video_{idx}.MP4" )
+    if '.' in directory.split('/')[-1]:
+        video_name = directory
+    else:
+        video_name = '{}.{}'.format(directory, video_ext)
 
-#         decord_vr = decord.VideoReader(video_name, num_threads=1)
+    try:
+        # try load video
 
-#         duration = len(decord_vr)
-#         # if duration < 30:
-#         #     return [-1, -1, -1]
-#         video_data = decord_vr.get_batch(list(range(duration))).asnumpy()
+        decord_vr = decord.VideoReader(video_name, num_threads=1)
 
-#         # get the new size (short side size 320p)
-#         _, img_h, img_w, _ = video_data.shape
-#         new_short_size = 320
-#         ratio = float(img_h) / float(img_w)
-#         if ratio >= 1.0:
-#             new_w = int(new_short_size)
-#             new_h = int(new_w * ratio / 2) * 2
+        duration = len(decord_vr)
+        # if duration < 30:
+        #     return [-1, -1, -1]
+        video_data = decord_vr.get_batch(list(range(duration))).asnumpy()
 
-#         else:
-#             new_h = int(new_short_size)
-#             new_w = int(new_h / ratio / 2) * 2
+        # get the new size (short side size 320p)
+        _, img_h, img_w, _ = video_data.shape
+        new_short_size = 320
+        ratio = float(img_h) / float(img_w)
+        if ratio >= 1.0:
+            new_w = int(new_short_size)
+            new_h = int(new_w * ratio / 2) * 2
+
+        else:
+            new_h = int(new_short_size)
+            new_w = int(new_h / ratio / 2) * 2
         
-#         #scale the BBx 
-#         y_ratio_bb = new_h/img_h
-#         x_ratio_bb = new_w/img_w
-#         new_BB_dict = [-1, -1, -1]
-#         i = video_name.split('/')[-1].split('.')[0]
-#         BB_path = os.path.join(BB_root_path, f"detection_{idx}.pkl")
-#         detection = pickle.load(open(BB_path, "rb"))
-#         objects =  detection["objects"]
-#         hands = detection["hands"]
-#         objects_bbx = []
-#         objects_bbx_norm = []
-#         for objects_bbxs in objects:
-#             frame_bbx = []
-#             frame_bbx_norm = []
-#             for object_bbx in objects_bbxs:
-#                 frame_bbx.append([object_bbx[0]*img_w*x_ratio_bb, object_bbx[1]*img_h*y_ratio_bb, object_bbx[2]*img_w*x_ratio_bb, object_bbx[3]*img_h*y_ratio_bb])
-#                 frame_bbx_norm.append([object_bbx[0]*img_w, object_bbx[1]*img_h, object_bbx[2]*img_w, object_bbx[3]*img_h])
-#             objects_bbx.append(frame_bbx)
-#             objects_bbx_norm.append(frame_bbx_norm)
+        #scale the BBx 
+        y_ratio_bb = new_h/img_h
+        x_ratio_bb = new_w/img_w
+        new_BB_dict = [int(idx), x_ratio_bb, y_ratio_bb, img_h, img_w]
 
-#         hands_bbx = []
-#         hands_bbx_norm = []
-#         for hands_bbxs in hands:
-#             frame_bbx = []
-#             frame_bbx_norm = []
-#             for hand_bbx in hands_bbxs:
-#                 frame_bbx.append([hand_bbx[0]*img_w*x_ratio_bb, hand_bbx[1]*img_h*y_ratio_bb, hand_bbx[2]*img_w*x_ratio_bb, hand_bbx[3]*img_h*y_ratio_bb])
-#                 frame_bbx_norm.append([hand_bbx[0]*img_w, hand_bbx[1]*img_h, hand_bbx[2]*img_w, hand_bbx[3]*img_h])
-#             hands_bbx.append(frame_bbx)
-#             hands_bbx_norm.append(frame_bbx_norm)
+        new_size = (new_w, new_h)
+    except Exception as e:
+        # skip corrupted video files
+        print("Failed to load video from {} with error {}".format(
+            video_name, e))
+        return [-1, -1, -1]
 
-#         if "train" in BB_root_path:
-#             train_or_val = "train"
-#         elif "val" in BB_root_path:
-#              train_or_val = "val"
-#         pickle.dump({"objects":objects, "hands":hands}, open(f"{root_add}/EPIC_100_hand_objects_{train_or_val}_modified" + "/" + f"detection_{idx}.pkl", "wb"))
-#         new_size = (new_w, new_h)
-#     except Exception as e:
-#         # skip corrupted video files
-#         print("Failed to load video from {} with error {}".format(
-#             video_name, e))
 
-#     # visulaize video and BBs
+    # visulaize video and BBs
     
+    # visual_bbx([video_data[0]], [hands_bbx_norm[0]])
 
-#     visual_bbx([video_data[0]], [hands_bbx_norm[0]])
+    # process the video
+    final_save_root_add = os.path.join(save_root_add, train_flag)
+    output_video_file = os.path.join(final_save_root_add, directory.replace('.MP4', '.mp4').split('/')[-1])
 
-#     # process the video
-#     output_video_file = os.path.join(save_root_add, directory.replace('.MP4', '.mp4').split('/')[-1])
-
-#     # resize
-#     proc1 = (ffmpeg.input(directory).filter(
-#         'scale', new_size[0],
-#         new_size[1]).output(output_video_file).overwrite_output())
-#     p = subprocess.Popen(
-#         ['ffmpeg'] + proc1.get_args()+
-#         ['-hide_banner', '-loglevel', 'quiet', '-nostats'])
-
-
-#     end_time = time.time()
-#     dur_time = end_time - start_time
-#     if verbose:
-#         print(f'processing video {idx + 1} with total time {dur_time} & save video in {output_video_file}')
+    # # resize
+    # proc1 = (ffmpeg.input(directory).filter(
+    #     'scale', new_size[0],
+    #     new_size[1]).output(output_video_file).overwrite_output())
+    # p = subprocess.Popen(
+    #     ['ffmpeg'] + proc1.get_args()+
+    #     ['-hide_banner', '-loglevel', 'quiet', '-nostats'])
 
 
+    end_time = time.time()
+    dur_time = end_time - start_time
+    if verbose:
+        print(f'processing video {idx + 1} with total time {dur_time} & save video in {output_video_file}')
+
+    return new_BB_dict
+
+def scale_BB(BB_root_path, ratio_list):
+
+    # pick train or val
+    train_flag = 'train' if 'train' in BB_root_path else 'validation'
+
+    # save scaled BB into a dict
+    scaled_BB = {}
+
+    for ratio in ratio_list:
+        idx, x_ratio_bb, y_ratio_bb, img_h, img_w = ratio
+
+        BB_path = os.path.join(BB_root_path, f"detection_{idx}.pkl")
+        detection = pickle.load(open(BB_path, "rb"))
+
+        objects =  detection["objects"]
+        hands = detection["hands"]
+        scaled_BB_dict = {}
+
+        labels = []
+        for objects_bbxs, hands_bbxs in zip(objects, hands):
+            object_frame_bbx = {}
+            hand_frame_bbx = {}
+            labels_frame = []
+            for object_bbx in objects_bbxs:
+                object_frame_bbx['box2d'] = {'x1': object_bbx[0]*img_w*x_ratio_bb, 'y1': object_bbx[1]*img_h*y_ratio_bb,
+                                        'x2': object_bbx[2]*img_w*x_ratio_bb, 'y2': object_bbx[3]*img_h*y_ratio_bb}
+                object_frame_bbx['gt_annotation'] = 'object'
+                labels_frame.append(object_frame_bbx)
+            
+            for hand_bbx in hands_bbxs:
+                hand_frame_bbx['box2d'] = {'x1': hand_bbx[0]*img_w*x_ratio_bb, 'y1': hand_bbx[1]*img_h*y_ratio_bb,
+                                        'x2': hand_bbx[2]*img_w*x_ratio_bb, 'y2': hand_bbx[3]*img_h*y_ratio_bb}
+                hand_frame_bbx['gt_annotation'] = 'hand'
+                labels_frame.append(hand_frame_bbx)
+            
+            labels.append({'labels':labels_frame})
+
+        # labels = {'labels': labels}
+
+        # scaled_BB_dict['name'] = f'video_{idx}'
+        # scaled_BB_dict['labels'] = labels
+        scaled_BB_dict[f'video_{idx}'] = labels
+
+        scaled_BB.update(scaled_BB_dict)
+
+    # save the scaled BB
+    out_path = os.path.join(save_root_add, f"EPIC_100_BB_{train_flag}.json")
+    with open(out_path, "w+", encoding="utf-8") as f:
+        f.write(orjson.dumps(scaled_BB).decode("utf-8"))
+
+    print(f"save scaled BB in {out_path}")
 
 
-# if __name__ == '__main__':
-#     # n_tasks = 64
-#     # new_start_idxs = [0] * n_tasks
+if __name__ == '__main__':
+    n_tasks = 4
+    # new_start_idxs = [0] * n_tasks
 
-#     data_clean(EPIC_100_train, 2, EPIC_100_hand_objects_train)
-#     # with Pool(n_tasks) as p:
-#     #     p.starmap(data_clean,[ (video_root_path, idx, BB_root_path)
-#     #                for (video_root_path, idx, BB_root_path) in zip ([EPIC_100_train]*len(data_train), range(len(data_train)), [EPIC_100_hand_objects_train]*len(data_train)) ])
-#     # with Pool(n_tasks) as p:
-#     #     p.starmap(data_clean,[ (video_root_path, idx, BB_root_path)
-#     #                for (video_root_path, idx, BB_root_path) in zip ([EPIC_100_val]*len(data_train), range(len(data_val)), [EPIC_100_hand_objects_val]*len(data_train)) ])
+    # # test one case/
+    # ratio = data_clean(EPIC_100_train, 10)
+    # scale_BB(EPIC_100_hand_objects_train, [ratio])
+
+    with Pool(n_tasks) as p:
+        train_out = p.starmap(data_clean,[ (video_root_path, idx)
+                   for (video_root_path, idx) in zip ([EPIC_100_train]*len(data_train), range(len(data_train))) ])
+
+    scale_BB(EPIC_100_hand_objects_train, train_out)
+
+    
+    with Pool(n_tasks) as p:
+        val_out = p.starmap(data_clean,[ (video_root_path, idx)
+                   for (video_root_path, idx) in zip ([EPIC_100_val]*len(data_train), range(len(data_val))) ])
+
+    scale_BB(EPIC_100_hand_objects_val, val_out)

@@ -10,14 +10,14 @@ val_df = {'path':[], 'label_name':[], 'label_num':[]}
 
 root_add_train = "/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/EPIC_100_train.csv"
 root_add_val = "/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/EPIC_100_validation.csv" 
-video_mp4_root_add_train = "/mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/train"
-video_mp4_root_add_val = "/mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/validation"
+video_mp4_root_add_train = "/mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/mp4_videos/train"
+video_mp4_root_add_val = "/mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/mp4_videos/validation"
 
 
 train_label = pd.read_csv(root_add_train)
 for i, item in train_label.iterrows():
     id = i
-    path = os.path.join(video_mp4_root_add_train, f"video_{i}.MP4")
+    path = os.path.join(video_mp4_root_add_train, f"video_{i}.mp4")
     if not os.path.exists(path):
         continue
     label_name = item ['verb']
@@ -45,16 +45,16 @@ val_df = pd.DataFrame(val_df)
 
 
 # to_csv() 
-csv_annotation_root = "/home/mona/VideoMAE/dataset/Epic_kitchen/annotation"
+csv_annotation_root = "/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb"
 if not os.path.exists(csv_annotation_root):
     os.makedirs(csv_annotation_root)
-train_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "verb_train.csv"), sep=' ', na_rep='', float_format=None, 
+train_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "train.csv"), sep=' ', na_rep='', float_format=None, 
 columns=None, header=False, index=False, index_label=None, mode='w', encoding=None, 
 compression='infer', quoting=None, quotechar='"', line_terminator=None, 
 chunksize=None, date_format=None, doublequote=True, escapechar=None, 
 decimal='.', errors='strict', storage_options=None)
 
-val_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "verb_val.csv"), sep=' ', na_rep='', float_format=None, 
+val_df.to_csv(path_or_buf=os.path.join(csv_annotation_root, "val.csv"), sep=' ', na_rep='', float_format=None, 
 columns=None, header=False, index=False, index_label=None, mode='w', encoding=None, 
 compression='infer', quoting=None, quotechar='"', line_terminator=None, 
 chunksize=None, date_format=None, doublequote=True, escapechar=None, 
