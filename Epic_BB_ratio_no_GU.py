@@ -156,7 +156,9 @@ for _, BB, _ in tqdm(data_loader_train, total=len(data_loader_train)):
         for box_frame in bb:
             BB_frame_each_video = torch.tensor((box_frame[2]-box_frame[0])*(box_frame[3]-box_frame[1]))
             BB_Percentage_each_video.append((BB_frame_each_video/(224*224))*100)
-        print(f'average percentage of bounding box coverage (No_GU) in each video' , torch.tensor(BB_Percentage_each_video).mean())
+        # print(f'average percentage of bounding box coverage (No_GU) in each video' , torch.tensor(BB_Percentage_each_video).mean())
     BB_Percentage.extend(BB_Percentage_each_video)
-    print(f'average percentage of bounding box coverage (No_GU) in each batch' , torch.tensor(BB_Percentage).mean())
+    # print(f'average percentage of bounding box coverage (No_GU) in each batch' , torch.tensor(BB_Percentage).mean())
+
+print(f'the average bounding box frame coverage: {np.mean(BB_Percentage)}')
     
