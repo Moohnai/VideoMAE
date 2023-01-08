@@ -13,10 +13,11 @@ import volume_transforms as volume_transforms
 class EpicVideoClsDataset(Dataset):
     """Load your own video classification dataset."""
 
-    def __init__(self, anno_path, data_path, mode='train', clip_len=8,
+    def __init__(self, classtype, anno_path, data_path, mode='train', clip_len=8,
                 crop_size=224, short_side_size=256, new_height=256,
                 new_width=340, keep_aspect_ratio=True, num_segment=1,
                 num_crop=1, test_num_segment=10, test_num_crop=3, args=None):
+        self.classtype = classtype
         self.anno_path = anno_path
         self.data_path = data_path
         self.mode = mode
@@ -122,7 +123,7 @@ class EpicVideoClsDataset(Dataset):
             sample = self.test_dataset[index]
             chunk_nb, split_nb = self.test_seg[index]
             buffer = self.loadvideo_decord(sample)
-
+    
             while len(buffer) == 0:
                 warnings.warn("video {}, temporal {}, spatial {} not found during testing".format(\
                     str(self.test_dataset[index]), chunk_nb, split_nb))
@@ -137,14 +138,14 @@ class EpicVideoClsDataset(Dataset):
 
             spatial_step = 1.0 * (max(buffer.shape[1], buffer.shape[2]) - self.short_side_size) \
                                 / (self.test_num_crop - 1)
-            temporal_start = chunk_nb # 0/1
+            temporal_start = chunk_nb # 0/1 ////////////////////////////////////////////////
             spatial_start = int(split_nb * spatial_step)
             if buffer.shape[1] >= buffer.shape[2]:
                 buffer = buffer[temporal_start::2, \
-                       spatial_start:spatial_start + self.short_side_size, :, :]
+                       spatial_start:spatial_start + self.short_side_size, :, :]#/////////////////////////////////////////
             else:
                 buffer = buffer[temporal_start::2, \
-                       :, spatial_start:spatial_start + self.short_side_size, :]
+                       :, spatial_start:spatial_start + self.short_side_size, :]#//////////////////////////////////
 
             buffer = self.data_transform(buffer)
             return buffer, self.test_label_array[index], sample.split("/")[-1].split(".")[0], \
@@ -192,7 +193,7 @@ class EpicVideoClsDataset(Dataset):
             min_scale=256,
             max_scale=320,
             crop_size=self.crop_size,
-            random_horizontal_flip=False if args.data_set == 'SSV2' else True,
+            random_horizontal_flip=False if args.data_set == 'Epic-Kitchens' else True,
             inverse_uniform_sampling=False,
             aspect_ratio=asp,
             scale=scl,
@@ -236,19 +237,19 @@ class EpicVideoClsDataset(Dataset):
             return []
 
         if self.mode == 'test':
-            all_index = []
-            tick = len(vr) / float(self.num_segment)
+            all_index = []#///////////////////////////////////////////
+            tick = len(vr) / float(self.num_segment)#//////////////////////////////////
             all_index = list(np.array([int(tick / 2.0 + tick * x) for x in range(self.num_segment)] +
-                               [int(tick * x) for x in range(self.num_segment)]))
-            while len(all_index) < (self.num_segment * self.test_num_segment):
+                               [int(tick * x) for x in range(self.num_segment)]))#//////////////////////////////////
+            while len(all_index) < (self.num_segment * self.test_num_segment):#//////////////////////////////////
                 all_index.append(all_index[-1])
             all_index = list(np.sort(np.array(all_index))) 
             vr.seek(0)
             buffer = vr.get_batch(all_index).asnumpy()
             return buffer
 
-        # handle temporal segments
-        average_duration = len(vr) // self.num_segment
+        # handle temporal segments????????????????
+        average_duration = len(vr) // self.num_segment#???????????
         all_index = []
         if average_duration > 0:
             all_index += list(np.multiply(list(range(self.num_segment)), average_duration) + np.random.randint(average_duration,
@@ -260,7 +261,7 @@ class EpicVideoClsDataset(Dataset):
         all_index = list(np.array(all_index)) 
         vr.seek(0)
         buffer = vr.get_batch(all_index).asnumpy()
-        return buffer
+        return buffer#???????????????????
 
     def __len__(self):
         if self.mode != 'test':

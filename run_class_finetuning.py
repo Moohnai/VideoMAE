@@ -126,7 +126,7 @@ def get_args():
     # Finetuning params
     # parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens/?????????checkpoint.pth', 
     #                     help='finetune from checkpoint')
-    parser.add_argument('--finetune', default='', 
+    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens/checkpoint-259.pth', 
                         help='finetune from checkpoint')
     parser.add_argument('--model_key', default='model|module', type=str)
     parser.add_argument('--model_prefix', default='', type=str)
@@ -146,7 +146,7 @@ def get_args():
     parser.add_argument('--num_segments', type=int, default= 1)
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 4)
-    parser.add_argument('--data_set', default='Epic-Kitchens', choices=['SSV2', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
+    parser.add_argument('--data_set', default='Epic-Kitchens', choices=['Epic-Kitchens', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
     parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_original_Epic_kitchens',
                         help='path where to save, empty for no saving')
@@ -171,11 +171,13 @@ def get_args():
                         help='Perform evaluation only')
     parser.add_argument('--dist_eval', action='store_true', default=True,
                         help='Enabling distributed evaluation')
-    parser.add_argument('--num_workers', default=4, type=int)
+    parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
     parser.set_defaults(pin_mem=True)
+
+    parser.add_argument('--classtype', default='verb', choices=['verb', 'noun', 'action'], type=str, help='type of classification')
 
     # distributed training parameters
     parser.add_argument('--world_size', default=1, type=int,
@@ -490,7 +492,7 @@ def main(args, ds_init):
     # initialize wandb
     wandb.init(
         project="VideoMAE_original",
-        group="Original_finetune_Epic_Kitchens",
+        group="finetune",
         name="finetune_Allclass_Init_VideoMAE_pretained_50_epoch",
         config=args,
         )

@@ -246,6 +246,7 @@ def build_dataset(is_train, test_mode, args):
 
 
         dataset = EpicVideoClsDataset(
+            classtype=args.classtype,
             anno_path=anno_path,
             data_path='/',
             mode=mode,
@@ -259,7 +260,8 @@ def build_dataset(is_train, test_mode, args):
             short_side_size=args.short_side_size,
             new_height=256,
             new_width=320,
-            args=args)
+            args=args,
+            )
         nb_classes = args.nb_classes        
 
     elif args.data_set == 'UCF101':
