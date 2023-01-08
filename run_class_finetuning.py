@@ -171,7 +171,7 @@ def get_args():
                         help='Perform evaluation only')
     parser.add_argument('--dist_eval', action='store_true', default=True,
                         help='Enabling distributed evaluation')
-    parser.add_argument('--num_workers', default=0, type=int)
+    parser.add_argument('--num_workers', default=4, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
@@ -215,6 +215,7 @@ def main(args, ds_init):
     print(args)
 
     device = torch.device(args.device)
+    # torch.cuda.set_device(3)
 
     # fix the seed for reproducibility
     seed = args.seed + utils.get_rank()
@@ -493,7 +494,7 @@ def main(args, ds_init):
     wandb.init(
         project="VideoMAE_original",
         group="finetune",
-        name="finetune_Allclass_Init_VideoMAE_pretained_50_epoch",
+        name="finetune_Allclass_Init_VideoMAE_pretained_50_epoch_Epic_Kitchens",
         config=args,
         )
     

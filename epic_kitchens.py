@@ -48,7 +48,7 @@ class EpicVideoClsDataset(Dataset):
 
         if (mode == 'train'):
             pass
-
+        
         elif (mode == 'validation'):
             self.data_transform = video_transforms.Compose([
                 video_transforms.Resize(self.short_side_size, interpolation='bilinear'),
