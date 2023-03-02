@@ -7,7 +7,7 @@ import torchvision.transforms.functional as F
 from PIL import Image
 from torchvision import transforms
 
-from rand_augment import rand_augment_transform
+from rand_augment_BB_focused import rand_augment_transform
 from random_erasing import RandomErasing
 
 
@@ -540,6 +540,7 @@ def _get_param_spatial_crop(
 
 def random_resized_crop(
     images,
+    bbox,
     target_height,
     target_width,
     scale=(0.8, 1.0),
@@ -554,6 +555,7 @@ def random_resized_crop(
 
     Args:
         images: Images to perform resizing and cropping.
+        bbox: Bounding box of the images.
         target_height: Desired height after cropping.
         target_width: Desired width after cropping.
         scale: Scale range of Inception-style area based random resizing.
@@ -565,12 +567,49 @@ def random_resized_crop(
 
     i, j, h, w = _get_param_spatial_crop(scale, ratio, height, width)
     cropped = images[:, :, i : i + h, j : j + w]
+
+    x1_crop, y1_crop, x2_crop, y2_crop = j, i, j + w, i + h
+
+    # now apply the same crop to bbox
+    bbox_crop = []
+    for bb in bbox:
+
+        # bbox is in format (x1, y1, x2, y2)
+        x1 = bb[0]
+        y1 = bb[1]
+        x2 = bb[2]
+        y2 = bb[3]
+
+        # check if the bbox and crop intersect
+        if x1_crop > x2 or x2_crop < x1 or y1_crop > y2 or y2_crop < y1:
+            # no intersection, return the coordinates of the crop
+            x1, y1, x2, y2 = x1_crop, y1_crop, x2_crop, y2_crop
+        else:
+            x1 = max(x1, x1_crop)
+            y1 = max(y1, y1_crop)
+            x2 = min(x2, x2_crop)
+            y2 = min(y2, y2_crop)
+
+        # find the x and y scale for the crop
+        x_ratio = target_height/height
+        y_ratio = target_width/width
+
+        # apply the scale to the bbox
+        x1 = int(x1 * x_ratio)
+        y1 = int(y1 * y_ratio)
+        x2 = int(x2 * x_ratio)
+        y2 = int(y2 * y_ratio)
+
+        bbox_crop.append([x1, y1, x2, y2])
+
+    bbox_crop = torch.tensor(np.array(bbox_crop))
+
     return torch.nn.functional.interpolate(
         cropped,
         size=(target_height, target_width),
         mode="bilinear",
         align_corners=False,
-    )
+    ), bbox_crop
 
 
 def random_resized_crop_with_shift(
@@ -990,26 +1029,6 @@ class Resize(object):
             clip, self.size, interpolation=self.interpolation)
         return resized
 
-class Resize_BB_focused(object):
-    """Resizes a list of (H x W x C) numpy.ndarray to the final size
-    The larger the original image is, the more times it takes to
-    interpolate
-    Args:
-    interpolation (str): Can be one of 'nearest', 'bilinear'
-    defaults to nearest
-    size (tuple): (widht, height)
-    """
-
-    def __init__(self, size, interpolation='nearest'):
-        self.size = size
-        self.interpolation = interpolation
-
-    def __call__(self, clip):
-        clip, bbox = clip
-        resized, bbox = FF.resize_clip_BB_focused(
-            clip, bbox, self.size, interpolation=self.interpolation)
-        return (resized, bbox)
-
 
 class RandomCrop(object):
     """Extract random crop at the same location for a list of images
@@ -1188,53 +1207,6 @@ class CenterCrop(object):
 
         return cropped
 
-class CenterCrop_BB_focused(object):
-    """Extract center crop at the same location for a list of images
-    Args:
-    size (sequence or int): Desired output size for the
-    crop in format (h, w)
-    """
-
-    def __init__(self, size):
-        if isinstance(size, numbers.Number):
-            size = (size, size)
-
-        self.size = size
-
-    def __call__(self, clip):
-        """
-        Args:
-        img (PIL.Image or numpy.ndarray): List of images to be cropped
-        in format (h, w, c) in numpy.ndarray
-        bbox (list): List of bounding boxes in format (x1, y1, x2, y2).
-
-        Returns:
-        PIL.Image or numpy.ndarray: Cropped list of images
-        """
-        clip, bbox = clip
-
-        h, w = self.size
-        if isinstance(clip[0], np.ndarray):
-            im_h, im_w, im_c = clip[0].shape
-        elif isinstance(clip[0], PIL.Image.Image):
-            im_w, im_h = clip[0].size
-        else:
-            raise TypeError('Expected numpy.ndarray or PIL.Image' +
-                            'but got list of {0}'.format(type(clip[0])))
-        if w > im_w or h > im_h:
-            error_msg = (
-                'Initial image size should be larger then '
-                'cropped size but got cropped sizes : ({w}, {h}) while '
-                'initial image is ({im_w}, {im_h})'.format(
-                    im_w=im_w, im_h=im_h, w=w, h=h))
-            raise ValueError(error_msg)
-
-        x1 = int(round((im_w - w) / 2.))
-        y1 = int(round((im_h - h) / 2.))
-        cropped, bbox = FF.crop_clip_BB_focused(clip, bbox, y1, x1, h, w)
-
-        return (cropped, bbox)
-
 
 class ColorJitter(object):
     """Randomly change the brightness, contrast and saturation and hue of the clip
@@ -1343,37 +1315,6 @@ class Normalize(object):
             Tensor: Normalized Tensor clip.
         """
         return FF.normalize(clip, self.mean, self.std)
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
-
-class Normalize_BB_focused(object):
-    """Normalize a clip with mean and standard deviation.
-    Given mean: ``(M1,...,Mn)`` and std: ``(S1,..,Sn)`` for ``n`` channels, this transform
-    will normalize each channel of the input ``torch.*Tensor`` i.e.
-    ``input[channel] = (input[channel] - mean[channel]) / std[channel]``
-    .. note::
-        This transform acts out of place, i.e., it does not mutates the input tensor.
-    Args:
-        mean (sequence): Sequence of means for each channel.
-        std (sequence): Sequence of standard deviations for each channel.
-    """
-
-    def __init__(self, mean, std):
-        self.mean = mean
-        self.std = std
-
-    def __call__(self, clip):
-        """
-        Args:
-            clip (Tensor): Tensor clip of size (T, C, H, W) to be normalized.
-            bbox (list): list of bounding boxes of size (T, 4) to be normalized.
-        Returns:
-            Tensor: Normalized Tensor clip.
-        """
-        clip, bbox = clip
-
-        return (FF.normalize(clip, self.mean, self.std), bbox)
 
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)

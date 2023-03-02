@@ -647,7 +647,7 @@ class VideoMAE_BB(torch.utils.data.Dataset):
         self.transform = transform
         self.lazy_init = lazy_init
         Total_video_BB={}
-        with open('/home/mona/VideoMAE/SSV2_BB/bounding_box_smthsmth_scaled.json', "r", encoding="utf-8") as f:
+        with open('../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/EPIC_100_BB_only_object_smooth_train.json', "r", encoding="utf-8") as f:
             Total_video_BB = orjson.loads(f.read())
         self.bb_data = Total_video_BB
 
@@ -708,18 +708,28 @@ class VideoMAE_BB(torch.utils.data.Dataset):
         images ,frame_id_list = self._video_TSN_decord_batch_loader(directory, decord_vr, duration, segment_indices, skip_offsets)
         bboxs = []
         bboxs_labels = []
+        frames_bbx = []
         union_frames_bbox = []
+
+        ###for Epic_Kitchens
         for idx, c in enumerate(frame_id_list):
-            bboxs.append([[x['box2d']["x1"], x['box2d']["y1"], x['box2d']["x2"], x['box2d']["y2"]] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']]) # x1, y1, x2, y2
-            bboxs_labels.append([x['gt_annotation'] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']])
-            union_frame_bboxs = np.array(bboxs[-1])
-            if len(union_frame_bboxs) == 0:
-                union_frame_bboxs = np.array([[0, 0, images[idx].size[0], images[idx].size[1]]])
-            union_frame_bboxs = np.array([np.min(union_frame_bboxs[:, 0]), np.min(union_frame_bboxs[:, 1]), np.max(union_frame_bboxs[:, 2]), np.max(union_frame_bboxs[:, 3])])
-            # if all the bboxs are zero or have equal values in x and y, then we use the whole image as the bbox
-            if union_frame_bboxs[0] == union_frame_bboxs[2] or union_frame_bboxs[1] == union_frame_bboxs[3]:
-                union_frame_bboxs = np.array([0, 0, images[idx].size[0], images[idx].size[1]])
-            union_frames_bbox.append(union_frame_bboxs)
+            union_frames_bbx = np.array([[x['box2d']["x1"], x['box2d']["y1"], x['box2d']["x2"], x['box2d']["y2"]] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']]).reshape(-1) # x1, y1, x2, y2
+            frames_bbx.append(union_frames_bbx)
+
+        
+
+        
+        # for idx, c in enumerate(frame_id_list):
+        #     bboxs.append([[x['box2d']["x1"], x['box2d']["y1"], x['box2d']["x2"], x['box2d']["y2"]] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']]) # x1, y1, x2, y2
+        #     bboxs_labels.append([x['gt_annotation'] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']])
+        #     union_frame_bboxs = np.array(bboxs[-1])
+        #     if len(union_frame_bboxs) == 0:
+        #         union_frame_bboxs = np.array([[0, 0, images[idx].size[0], images[idx].size[1]]])
+        #     union_frame_bboxs = np.array([np.min(union_frame_bboxs[:, 0]), np.min(union_frame_bboxs[:, 1]), np.max(union_frame_bboxs[:, 2]), np.max(union_frame_bboxs[:, 3])])
+        #     # if all the bboxs are zero or have equal values in x and y, then we use the whole image as the bbox
+        #     if union_frame_bboxs[0] == union_frame_bboxs[2] or union_frame_bboxs[1] == union_frame_bboxs[3]:
+        #         union_frame_bboxs = np.array([0, 0, images[idx].size[0], images[idx].size[1]])
+        #     union_frames_bbox.append(union_frame_bboxs)
 
         union_frames_bbox = np.array(union_frames_bbox)  # x1, y1, x2, y2
 
@@ -729,13 +739,14 @@ class VideoMAE_BB(torch.utils.data.Dataset):
 
         # self.visual_bbx(process_data, process_bbx)
 
-        process_bbx = np.array([[bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]] for bbx in process_bbx if len(bbx)>0]) # x1, y1, x2, y2
+        # process_bbx = np.array([[bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]] for bbx in process_bbx if len(bbx)>0]) # x1, y1, x2, y2
 
         # if the object bbox is removed in the process of transform
         if len(process_bbx) == 0:
             bbox = np.array([0, 0, process_data.size()[-2], process_data.size()[-1]])
         else:
-            bbox = np.array([np.min(process_bbx[:, 0]), np.min(process_bbx[:, 1]), np.max(process_bbx[:, 2]), np.max(process_bbx[:, 3])]) # x1, y1, xk, yk
+            # bbox = np.array([np.min(process_bbx[:, 0]), np.min(process_bbx[:, 1]), np.max(process_bbx[:, 2]), np.max(process_bbx[:, 3])]) # x1, y1, xk, yk
+            bbox = process_bbx
         process_data = process_data.view((self.new_length, 3) + process_data.size()[-2:]).transpose(0,1)  # T*C,H,W -> T,C,H,W -> C,T,H,W
         
         return (process_data, torch.LongTensor(bbox), mask)
@@ -899,7 +910,7 @@ class VideoMAE_BB_no_global_union(torch.utils.data.Dataset):
         self.lazy_init = lazy_init
         Total_video_BB_no_global_union={}
         print("Loading bbox json file...")
-        with open('../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/mp4_videos/EPIC_100_BB_train.json', "r", encoding="utf-8") as f:
+        with open('../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/EPIC_100_BB_smooth_train.json', "r", encoding="utf-8") as f:
             Total_video_BB = orjson.loads(f.read())
         self.bb_data = Total_video_BB
 
@@ -915,34 +926,69 @@ class VideoMAE_BB_no_global_union(torch.utils.data.Dataset):
                 raise(RuntimeError("Found 0 video clips in subfolders of: " + root + "\n"
                                    "Check your data directory (opt.data-dir)."))
 
-    #fuction for visualizing image with bounding box
-    
-    def visual_bbx (self, images, bboxes):
+    # ###fuction for visualizing image with bounding box
+    def visual_union_bbx_Epic_Kitchens (self, images, union_bbx, video_name=""):
         """
         images (torch.Tensor or np.array): list of images in torch or numpy type.
-        bboxes (List[List]): list of list having bounding boxes in [x1, y1, x2, y2]
+        union_bbx (List[List]): list of list having union bounding box of each frame in [x1, y1, x2, y2]
+        format of json file for bbx: a dictionary with key as video name and value as a list of bbx for each frame. 
+        each element of this list is a dictionary with key as 'labels' and value as a list that include a dictionary with two key 
+        'box2d' that its value is a dictionary with key as 'x1', 'x2', 'y1', 'y2' 
+        and another key is 'gt_annotation' that its value here is 'union'
+
+        for instance: Total_video_BB ['video_0'][0]['labels'][0]['box2d']>>>>>>>>>{'x1': 0, 'y1': 0, 'x2': 570, 'y2': 320}
         """
         if isinstance(images, torch.Tensor):
             images = images.view((16, 3) + images.size()[-2:])
         color_list = [(255,0,0), (0,255,0), (0,0,255), (255,255,0), (0, 255,255)]
-        if not os.path.exists('VideoMAE/SSV2_BB/data/visual_bbx'):
-            os.makedirs('VideoMAE/SSV2_BB/data/visual_bbx')
-        for i, (img, bbx) in enumerate(zip(images, bboxes)):
-            if isinstance(img, Image.Image):
-                frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-                # (x1,y1,x2,y2) = (bbx[0], bbx[1], bbx[2], bbx[3])
-            elif isinstance(img, torch.Tensor):
+        if not os.path.exists('VideoMAE/Epic_Kitchens_BB/data/visual_bbx'):
+            os.makedirs('VideoMAE/Epic_Kitchens_BB/data/visual_bbx')
+        for i, (img, bbx) in enumerate(zip(images, union_bbx)):
+            if isinstance(img, torch.Tensor):
                 frame = img.numpy().astype(np.uint8).transpose(1, 2, 0)
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                # if len(bbx) != 0:
-                #     (x1,y1,x2,y2) = (bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3])
-            if len(bbx) != 0:
-                # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color_list[0], 4)
-                ##
-                for c, b in enumerate(bbx):
-                    cv2.rectangle(frame, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), color_list[c], 4)
-                ##
-            cv2.imwrite(f'VideoMAE/SSV2_BB/data/visual_bbx/{i}.png', frame)
+            elif isinstance(img, Image.Image):
+                frame = np.array(img)
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+            bb = bbx.copy().reshape(-1)
+            (x1,y1,x2,y2) = (bb[0], bb[1], bb[2], bb[3])
+        
+            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color_list[0], 4)
+            # for c, b in enumerate(bbx):
+            #     cv2.rectangle(frame, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), color_list[c], 4)
+
+            cv2.imwrite(f'VideoMAE/Epic_Kitchens_BB/data/visual_bbx/{video_name}_{i}.png', frame)   
+       
+
+
+
+    # def visual_bbx (self, images, bboxes):
+    #     """
+    #     images (torch.Tensor or np.array): list of images in torch or numpy type.
+    #     bboxes (List[List]): list of list having bounding boxes in [x1, y1, x2, y2]
+    #     """
+    #     if isinstance(images, torch.Tensor):
+    #         images = images.view((16, 3) + images.size()[-2:])
+    #     color_list = [(255,0,0), (0,255,0), (0,0,255), (255,255,0), (0, 255,255)]
+    #     if not os.path.exists('VideoMAE/SSV2_BB/data/visual_bbx'):
+    #         os.makedirs('VideoMAE/SSV2_BB/data/visual_bbx')
+    #     for i, (img, bbx) in enumerate(zip(images, bboxes)):
+    #         if isinstance(img, Image.Image):
+    #             frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    #             # (x1,y1,x2,y2) = (bbx[0], bbx[1], bbx[2], bbx[3])
+    #         elif isinstance(img, torch.Tensor):
+    #             frame = img.numpy().astype(np.uint8).transpose(1, 2, 0)
+    #             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    #             # if len(bbx) != 0:
+    #             #     (x1,y1,x2,y2) = (bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3])
+    #         if len(bbx) != 0:
+    #             # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color_list[0], 4)
+    #             ##
+    #             for c, b in enumerate(bbx):
+    #                 cv2.rectangle(frame, (int(b[0]), int(b[1])), (int(b[2]), int(b[3])), color_list[c], 4)
+    #             ##
+    #         cv2.imwrite(f'VideoMAE/SSV2_BB/data/visual_bbx/{i}.png', frame)
 
 
     def __getitem__(self, index):
@@ -967,25 +1013,30 @@ class VideoMAE_BB_no_global_union(torch.utils.data.Dataset):
         bboxs_labels = []
         # union_frames_bbox = []
         frames_bbox = []
+        ### for EPIC-KITCHENS
         for idx, c in enumerate(frame_id_list):
-            bboxs.append([[x['box2d']["x1"], x['box2d']["y1"], x['box2d']["x2"], x['box2d']["y2"]] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']]) # x1, y1, x2, y2
-            bboxs_labels.append([x['gt_annotation'] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']])
-            union_frame_bboxs = np.array(bboxs[-1])
-            if len(union_frame_bboxs) == 0:
-                union_frame_bboxs = np.array([[0, 0, 1, 1]])
-            union_frame_bboxs = np.array([np.min(union_frame_bboxs[:, 0]), np.min(union_frame_bboxs[:, 1]), np.max(union_frame_bboxs[:, 2]), np.max(union_frame_bboxs[:, 3])])
-            # if all the bboxs are zero or have equal values in x and y, then we use the whole image as the bbox
-            if union_frame_bboxs[0] == union_frame_bboxs[2] or union_frame_bboxs[1] == union_frame_bboxs[3]:
-                union_frame_bboxs = np.array([0, 0, 1, 1])
+            union_frame_bboxs = np.array([[x['box2d']["x1"], x['box2d']["y1"], x['box2d']["x2"], x['box2d']["y2"]] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']]).reshape(-1) # x1, y1, x2, y2
             frames_bbox.append(union_frame_bboxs)
+
+        # for idx, c in enumerate(frame_id_list):
+        #     bboxs.append([[x['box2d']["x1"], x['box2d']["y1"], x['box2d']["x2"], x['box2d']["y2"]] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']]) # x1, y1, x2, y2
+        #     bboxs_labels.append([x['gt_annotation'] for x in self.bb_data[video_name.split('/')[-1].split('.')[0]][c]['labels']])
+        #     union_frame_bboxs = np.array(bboxs[-1])
+        #     if len(union_frame_bboxs) == 0:
+        #         union_frame_bboxs = np.array([[0, 0, 1, 1]])
+        #     union_frame_bboxs = np.array([np.min(union_frame_bboxs[:, 0]), np.min(union_frame_bboxs[:, 1]), np.max(union_frame_bboxs[:, 2]), np.max(union_frame_bboxs[:, 3])])
+        #     # if all the bboxs are zero or have equal values in x and y, then we use the whole image as the bbox
+        #     if union_frame_bboxs[0] == union_frame_bboxs[2] or union_frame_bboxs[1] == union_frame_bboxs[3]:
+        #         union_frame_bboxs = np.array([0, 0, 1, 1])
+        #     frames_bbox.append(union_frame_bboxs)
 
         frames_bbox = np.array(frames_bbox)  # x1, y1, x2, y2
 
-        # self.visual_bbx(images, [[x] for x in frames_bbox])
+        # self.visual_union_bbx_Epic_Kitchens(images, frames_bbox)
 
         process_data, process_bbx, mask = self.transform((images, frames_bbox)) # T*C,H,W
 
-        # self.visual_bbx(process_data, process_bbx)
+        # self.visual_union_bbx_Epic_Kitchens(process_data, [np.array(list(bbx[0][:4])) for bbx in process_bbx], video_name.split('/')[-1].split('.')[0])
 
         # process_bbx = np.array([[bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]] for bbx in process_bbx if len(bbx)>0]) # x1, y1, x2, y2
         process_bbx_filtered= []

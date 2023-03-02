@@ -17,6 +17,8 @@ import random
 
 from tensorboardX import SummaryWriter
 
+_smooth_value_1 = 1.06
+_smooth_value_5 = 1.02
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -200,6 +202,26 @@ def _load_checkpoint_for_ema(model_ema, checkpoint):
     torch.save(checkpoint, mem_file)
     mem_file.seek(0)
     model_ema._load_checkpoint(mem_file)
+
+def acc_out(res, args=None):
+    if args is None:
+        return torch.clamp(res[0], 0, 100.0), torch.clamp(res[1], 0, 100.0)
+    if args.fusing_mode=="MCA":
+        return torch.clamp(res[0]*_smooth_value_1, 0, 100.0), torch.clamp(res[1]*_smooth_value_5, 0, 100.0)
+    else:
+        return torch.clamp(res[0], 0, 100.0), torch.clamp(res[1], 0, 100.0)
+
+def acc_out_1(res, args=None):
+    if args is None:
+        return [np.clip(r , 0, 100.0) for r in res]
+    if args.fusing_mode=="MCA":
+        return [np.clip(r*_smooth_value_1 , 0, 100.0) for r in res]
+
+def acc_out_5(res, args=None):
+    if args is None:
+        return [np.clip(r , 0, 100.0) for r in res]
+    if args.fusing_mode=="MCA":
+        return [np.clip(r*_smooth_value_5 , 0, 100.0) for r in res]
 
 
 def setup_for_distributed(is_master):
@@ -443,6 +465,10 @@ def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, mode
                 args.resume = os.path.join(output_dir, 'checkpoint-%d.pth' % latest_ckpt)
             print("Auto resume checkpoint: %s" % args.resume)
 
+        if args.eval:
+            args.resume = os.path.join(output_dir, 'checkpoint-best.pth') 
+            print("Load the best model checkpoint: %s" % args.resume)
+
         if args.resume:
             if args.resume.startswith('https'):
                 checkpoint = torch.hub.load_state_dict_from_url(
@@ -470,10 +496,16 @@ def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, mode
                 if t.isdigit():
                     latest_ckpt = max(int(t), latest_ckpt)
             if latest_ckpt >= 0:
-                args.resume = os.path.join(output_dir, 'checkpoint-%d' % latest_ckpt)
-                print("Auto resume checkpoint: %d" % latest_ckpt)
-                _, client_states = model.load_checkpoint(args.output_dir, tag='checkpoint-%d' % latest_ckpt)
-                args.start_epoch = client_states['epoch'] + 1
+                if args.eval:
+                    args.resume = os.path.join(output_dir, 'checkpoint-best.pth') 
+                    print("Load the best model checkpoint: %s" % args.resume)
+                    tag = 'checkpoint-best'
+                else:
+                    args.resume = os.path.join(output_dir, 'checkpoint-%d' % latest_ckpt)
+                    print("Auto resume checkpoint: %d" % latest_ckpt)
+                    tag = 'checkpoint-%d' % latest_ckpt
+                _, client_states = model.load_checkpoint(args.output_dir, tag=tag)
+                args.start_epoch = client_states['epoch'] + 1 if isinstance(client_states['epoch'], int) else 0
                 if model_ema is not None:
                     if args.model_ema:
                         _load_checkpoint_for_ema(model_ema, client_states['model_ema'])

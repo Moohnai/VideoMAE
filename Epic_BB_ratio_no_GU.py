@@ -5,6 +5,8 @@ from datasets import build_pretraining_dataset, build_pretraining_dataset_BB,bui
 import argparse
 import utils
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+
 
 def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
@@ -76,7 +78,7 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/train.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
@@ -103,7 +105,7 @@ def get_args():
     parser.set_defaults(pin_mem=True)
 
     # dataset name
-    parser.add_argument('--data_set', default='SSV2', type=str, help='Other dataset options is: Kinetics-400, UCF101, HMDB51')
+    parser.add_argument('--data_set', default='Epic-Kitchens', type=str, help='Other dataset options is: SSV2, Kinetics-400, UCF101, HMDB51')
     parser.add_argument('--reprob', default=0.5, type=float, help='Probability that the Random Erasing operation will be performed.')
     parser.add_argument('--remode', default='const', type=str, help="mode: pixel color mode, one of 'const', 'rand', or 'pixel. \
         'const' - erase block is constant color of 0 for all channels \
@@ -142,7 +144,7 @@ sampler_train = torch.utils.data.DistributedSampler(
 data_loader_train = torch.utils.data.DataLoader(
     dataset_train, sampler=sampler_train,
     batch_size=64,
-    num_workers=0,
+    num_workers=4,
     pin_memory=False,
     drop_last=True,
     worker_init_fn=seed_worker
@@ -150,15 +152,20 @@ data_loader_train = torch.utils.data.DataLoader(
 
 
 BB_Percentage=[]
-for _, BB, _ in tqdm(data_loader_train, total=len(data_loader_train)):
-    for bb in BB:
+for video, BB, _ in tqdm(data_loader_train, total=len(data_loader_train)):
+    for i in range(BB.shape[0]):
+        bb = BB[i]
         BB_Percentage_each_video=[]
-        for box_frame in bb:
-            BB_frame_each_video = torch.tensor((box_frame[2]-box_frame[0])*(box_frame[3]-box_frame[1]))
+        for j in range(bb.shape[0]):
+            box_frame = bb[j].numpy()
+            BB_frame_each_video = np.abs(box_frame[2]-box_frame[0])*np.abs(box_frame[3]-box_frame[1])
             BB_Percentage_each_video.append((BB_frame_each_video/(224*224))*100)
         # print(f'average percentage of bounding box coverage (No_GU) in each video' , torch.tensor(BB_Percentage_each_video).mean())
-    BB_Percentage.extend(BB_Percentage_each_video)
+        BB_Percentage.extend(BB_Percentage_each_video)
     # print(f'average percentage of bounding box coverage (No_GU) in each batch' , torch.tensor(BB_Percentage).mean())
-
+    #histogram of bounding box coverage
+    plt.hist(BB_Percentage, bins=100)
+    plt.savefig('./histogram_BB_coverage_No_GU.png')
+    plt.show()
 print(f'the average bounding box frame coverage: {np.mean(BB_Percentage)}')
     

@@ -7,7 +7,11 @@ import utils
 from einops import rearrange
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 import wandb
-
+import matplotlib.pyplot as plt
+import os
+import textwrap
+import cv2
+import numpy as np
 
 def train_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, loss_scaler, max_norm: float = 0, patch_size: int = 16, 
@@ -46,6 +50,10 @@ def train_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: to
                 videos_squeeze = rearrange(unnorm_videos, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2) c', p0=2, p1=patch_size, p2=patch_size)
                 videos_norm = (videos_squeeze - videos_squeeze.mean(dim=-2, keepdim=True)
                     ) / (videos_squeeze.var(dim=-2, unbiased=True, keepdim=True).sqrt() + 1e-6)
+                ###########
+                tube_mean = videos_squeeze.mean(dim=-2, keepdim=True)
+                tube_std = videos_squeeze.var(dim=-2, unbiased=True, keepdim=True).sqrt() + 1e-6
+                ###########
                 # we find that the mean is about 0.48 and standard deviation is about 0.08.
                 videos_patch = rearrange(videos_norm, 'b n p c -> b n (p c)')
             else:
@@ -60,6 +68,72 @@ def train_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: to
 
         loss_value = loss.item()
 
+        #######################################################
+        #visualize the reconstruction
+        out = videos_patch.clone()
+        out[bool_masked_pos] = outputs.clone().float().reshape(-1, C)
+        out = rearrange(out, 'b n (p c) -> b n p c', c = 3)
+        out_denorm = out.reshape(B,1568,512,3) * tube_std + tube_mean
+        reconstructed_out= rearrange(out_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
+            t=8, h=14, w=14)
+
+        # save the video of the reconstruction and the original video
+                    
+        for i in range (unnorm_videos.shape[0]):
+            out_vis = cv2.VideoWriter(filename=f'./input_video_{i}_original.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=4, frameSize=(224, 224), isColor=True)
+            for j in range (unnorm_videos.shape[2]):
+                frame = unnorm_videos[i, :, j, :, :].detach().cpu().numpy()
+                frame = frame.transpose(1, 2, 0)
+                # clip values to [0, 1]
+                frame = np.clip(frame, 0, 1)
+                frame = (frame * 255).astype(np.uint8)
+                out_vis.write(np.array(frame)[:,:,::-1])
+            out_vis.release()
+        
+                    
+        for i in range (reconstructed_out.shape[0]):
+            out_vis = cv2.VideoWriter(filename=f'./reconstructed_video_{i}.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=4, frameSize=(224, 224), isColor=True)
+            for j in range (reconstructed_out.shape[2]):
+                frame = reconstructed_out[i, :, j, :, :].detach().cpu().numpy()
+                frame = frame.transpose(1, 2, 0)
+                # clip values to [0, 1]
+                frame = np.clip(frame, 0, 1)
+                frame = (frame * 255).astype(np.uint8)
+                out_vis.write(np.array(frame)[:,:,::-1].astype(np.uint8))
+            out_vis.release()
+ 
+
+
+
+            img_1 = unnorm_videos[i, :, 0, :, :].detach().cpu().numpy()
+            # convert channel first to channel last
+            img_1 = img_1.transpose(1, 2, 0)
+            img_2 = reconstructed_out[i, :, 0, :, :].detach().cpu().numpy()
+            img_2 = img_2.transpose(1, 2, 0)
+
+            # save the reconstructed image
+            model_name = model.__class__.__name__
+            save_path = './'#os.path.join('VideoMAE', 'reconstruction')
+            fig, ax = plt.subplots(1, 2, figsize=(10, 8))
+            # set title
+            fig.suptitle(
+                "\n".join(
+                    textwrap.wrap(
+                        "Reconstruction of the video, Model: " + model_name, 60
+                    )
+                )
+            )
+            plt.subplot(1, 2, 1)
+            plt.title("Original video")
+            plt.imshow(img_1)
+            plt.subplot(1, 2, 2)
+            plt.title("Reconstructed video")
+            plt.imshow(img_2)
+            plt.savefig(os.path.join(save_path, model_name + f'_reconstruction{i}.png'))
+            plt.close()
+
+
+        ########################################################
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
             sys.exit(1)
@@ -140,6 +214,7 @@ def train_one_epoch_BB(model: torch.nn.Module, data_loader: Iterable, optimizer:
             video_bbox_region = bbox[v]
             video_masks[v] [:,:, int(video_bbox_region[1]):int(video_bbox_region[3]), int(video_bbox_region[0]):int(video_bbox_region[2])] = 1 # y , x
 
+        # mask_for_input = video_masks.clone()
 
         with torch.no_grad():
             # calculate the predict label
@@ -170,11 +245,14 @@ def train_one_epoch_BB(model: torch.nn.Module, data_loader: Iterable, optimizer:
             # create label mask for applying bbox
             labels_mask = video_masks[bool_masked_pos].reshape(B, -1, C)
 
+            
+            # # mask the input video (put 0 for the pixels outside of the BB)
+            # videos = videos * mask_for_input
 
             # find zero elements in labels
             labels_mask_loc = torch.where(labels_mask==0)
             labels_mask = torch.ones_like(labels)
-            labels_mask[labels_mask_loc[0], labels_mask_loc[1], labels_mask_loc[2]] = 0
+            labels_mask[labels_mask_loc[0], labels_mask_loc[1], labels_mask_loc[2]] = 0.5
 
         with torch.cuda.amp.autocast():
             outputs = model(videos, bool_masked_pos)
@@ -271,13 +349,16 @@ def train_one_epoch_BB_no_global_union(model: torch.nn.Module, data_loader: Iter
         for v in range(videos.shape[0]):
             video_bbox_region = bbox[v]
             for frame_index in range(videos.shape[1]):
-                video_masks [:,frame_index, int(video_bbox_region[frame_index,1]):int(video_bbox_region[frame_index,3]), int(video_bbox_region[frame_index,0]):int(video_bbox_region[frame_index,2])] = 1 # y , x
-            
+                video_masks[v][:,frame_index, int(video_bbox_region[frame_index,1]):int(video_bbox_region[frame_index,3]), int(video_bbox_region[frame_index,0]):int(video_bbox_region[frame_index,2])] = 1 # y , x
+        
+        mask_for_input = video_masks.clone()  
         # import cv2
         # import numpy as np
         # frame = videos[1][:,-1].cpu().numpy().astype(np.uint8).transpose(1, 2, 0)
         # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         # cv2.imwrite(f'{i}.png', frame)
+
+                
 
         with torch.no_grad():
             # calculate the predict label
@@ -307,10 +388,14 @@ def train_one_epoch_BB_no_global_union(model: torch.nn.Module, data_loader: Iter
             # create label mask for applying bbox
             mask_labels = video_masks[bool_masked_pos].reshape(B, -1, C)
 
+            
+            ### mask the input video (put 0 for the pixels outside of the BB)
+            # videos = videos * mask_for_input
+
             # find zero elements in labels
             labels_mask_loc = torch.where(mask_labels==0)
             labels_mask = torch.ones_like(labels)
-            labels_mask[labels_mask_loc[0], labels_mask_loc[1], labels_mask_loc[2]] = 0
+            labels_mask[labels_mask_loc[0], labels_mask_loc[1], labels_mask_loc[2]] = 0.5
 
         with torch.cuda.amp.autocast():
             outputs = model(videos, bool_masked_pos)

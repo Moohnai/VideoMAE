@@ -237,9 +237,9 @@ def main(args):
 
     # initialize wandb
     wandb.init(
-        project="VideoMAE_BB",
+        project="Epic-Kitchens",
         group="BB_pretrained",
-        name="BB_800_epochs_VideoMAE_scratch",
+        name="800_epochs_BB_VideoMAE_scratch_15classes",
         config=args,
         )
 

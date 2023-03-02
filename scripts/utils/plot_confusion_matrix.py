@@ -13,10 +13,10 @@ from sklearn.metrics import confusion_matrix
 
 import numpy as np
 
-root_add = "/home/mona/VideoMAE/dataset/somethingsomething/"
+root_add = "/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb"
 # path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB(800)/*.txt'
 # path = r'/home/mona/VideoMAE/results/finetune_Allclass_BB_VideoMAE_scratch(50)/*.txt'
-path = r'/home/mona/VideoMAE/results/finetune_Allclass_from_coppola/*.txt'
+path = r'/home/mona/VideoMAE/results/finetune_original_Epic_kitchens_verb/*.txt'
 
 
 files = glob.glob(path, recursive=True)
@@ -27,6 +27,7 @@ plot_name = files[0].split('/')[-2].split('.')[0]
 
 label = []
 pred = []
+probs = []
 for file in files:
     f = open(file,'r')
     for i, line in enumerate (f):
@@ -40,6 +41,7 @@ for file in files:
             pred.append(max_index)
             GT = int(line.split(" ")[-3])
             label.append(GT)
+            probs.append(prob)
             
         
 
@@ -47,7 +49,10 @@ for file in files:
 
 f = open(os.path.join(root_add, 'labels','labels.json'))
 labels = json.load(f)
-class_names = list(labels.keys())
+class_num = [int(i) for i in list(labels.keys())]
+class_names = list(labels.values())
+
+
 # for i in range (len(class_names)):
 #     print (f"{i} : {class_names[i]}")
 
@@ -134,24 +139,36 @@ cm = confusion_matrix(label, pred)
 # print classes with the highest number of errors
 errors = np.sum(cm, axis=1) - np.diag(cm)
 error_percentage = errors / np.sum(cm, axis=1)
+
+#find the classes that the model can't predict at all and find the predicted class of them
+np.diag(cm)
+zero_pred = np.where(np.diag(cm)==0)[0]
+uniq_labels = np.unique(label)
+uniq_pred = np.unique(pred)
+zero_acc = [cls for cls in uniq_labels if cls in pred]
+actual_zero_pred = [cls for cls in zero_pred if cls not in zero_acc] #classes that the model can't predict at all and were in the test set
+print(actual_zero_pred)
+
+
+
 # sort the errors based on the percentage of errors
 idx = np.argsort(error_percentage)
 idx = idx[::-1]
 for i in idx:
-    print('class "%s": %d errors (%.2f%%) with %d samples with ID: %s' % (class_names[i], errors[i], 100.*errors[i]/np.sum(cm[i,:]), np.sum(cm[i,:]), i))
+    print('class "%s": %d errors (%.2f%%) with %d samples with ID: %s' % (class_num[i], errors[i], 100.*errors[i]/np.sum(cm[i,:]), np.sum(cm[i,:]), i))
 
 # ## analysis of the confusion matrix fo each class (Debugging)(3 most erroe : 109,47,12)
 cm_norm = confusion_matrix(label, pred).astype('float') / confusion_matrix(label, pred).sum(axis=1)[:, np.newaxis]
 for i in idx[0:10]:
     print('*'*50)
-    print('class "%s": %d errors (%.2f%%) with ID: %s' % (class_names[i], errors[i], 100.*errors[i]/np.sum(cm[i,:]), i))
+    print('class "%s": %d errors (%.2f%%) with ID: %s' % (class_num[i], errors[i], 100.*errors[i]/np.sum(cm[i,:]), i))
     cls = cm_norm[i, :] 
     cls_idx = np.argsort(cls)
     cls_idx = cls_idx[::-1]
     print('most confused classes:')
     for j in cls_idx[0:5]:
         if j != i:
-            print('  class "%s": %d errors (%.2f%%) with ID: %s' % (class_names[j], errors[j], 100.*errors[j]/np.sum(cm[j,:]), j))
+            print('  class "%s": %d errors (%.2f%%) with ID: %s' % (class_num[j], errors[j], 100.*errors[j]/np.sum(cm[j,:]), j))
 
 # # check single class
 # i = 111
@@ -167,7 +184,7 @@ for i in idx[0:10]:
 
 plot_confusion_matrix(cm = cm, 
                     normalize    = True,
-                    target_names =  [str(num) for num in list(range(len(class_names)))],
+                    target_names =  [str(num) for num in list(range(len(class_num)))],
                     title        = "Confusion Matrix")
 
 

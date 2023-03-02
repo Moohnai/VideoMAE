@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import random
-from datasets import build_pretraining_dataset, build_pretraining_dataset_BB
+from datasets import build_pretraining_dataset, build_pretraining_dataset_BB, build_pretraining_dataset_BB_no_global_union
 import argparse
 import utils
 from tqdm import tqdm
@@ -76,7 +76,7 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/train_BB.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)

@@ -20,7 +20,7 @@ import wandb
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE pre-training script', add_help=False)
-    parser.add_argument('--batch_size', default=12, type=int)
+    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--epochs', default=800 , type=int)
     parser.add_argument('--save_ckpt_freq', default=20, type=int)
 
@@ -82,14 +82,14 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb_train.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/randomcropped15class/train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 2)
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_videoMAE_random_fixed_cropped_Epic_Kitchens_15classes',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_videoMAE_random_fixed_cropped_Epic_Kitchens_15classes',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -101,7 +101,7 @@ def get_args():
 
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
-    parser.add_argument('--num_workers', default=10, type=int)
+    parser.add_argument('--num_workers', default=4, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem',
@@ -236,9 +236,9 @@ def main(args):
 
     # initialize wandb
     wandb.init(
-        project="VideoMAE_original",
+        project="Epic-Kitchens",
         group="pretrained",
-        name="800_epochs_VideoMAE_scratch_Epic_Kitchens",
+        name="800_epochs_VideoMAE_scratch_random_cropped_video_15classes",
         config=args,
         )
 

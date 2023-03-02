@@ -139,13 +139,13 @@ def data_clean(video_root_path, idx, verbose=False):
     final_save_root_add = os.path.join(save_root_add, train_flag)
     output_video_file = os.path.join(final_save_root_add, directory.replace('.MP4', '.mp4').split('/')[-1])
 
-    # # resize
-    # proc1 = (ffmpeg.input(directory).filter(
-    #     'scale', new_size[0],
-    #     new_size[1]).output(output_video_file).overwrite_output())
-    # p = subprocess.Popen(
-    #     ['ffmpeg'] + proc1.get_args()+
-    #     ['-hide_banner', '-loglevel', 'quiet', '-nostats'])
+    # resize
+    proc1 = (ffmpeg.input(directory).filter(
+        'scale', new_size[0],
+        new_size[1]).output(output_video_file).overwrite_output())
+    p = subprocess.Popen(
+        ['ffmpeg'] + proc1.get_args()+
+        ['-hide_banner', '-loglevel', 'quiet', '-nostats'])
 
 
     end_time = time.time()

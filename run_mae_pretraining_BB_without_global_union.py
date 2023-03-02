@@ -10,7 +10,7 @@ from pathlib import Path
 from timm.models import create_model
 from optim_factory import create_optimizer
 from datasets import build_pretraining_dataset, build_pretraining_dataset_BB,build_pretraining_dataset_BB_no_global_union
-from engine_for_pretraining import train_one_epoch_BB_no_global_union
+from engine_for_pretraining import train_one_epoch_BB_no_global_union, train_one_epoch_BB_no_global_union_gradual
 from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
 import modeling_pretrain
@@ -81,14 +81,14 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/train.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 2)
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_global_union_scratch_Epic_Kitchen',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_gradual[1,0]_weighted_loss_Epic_Kitchens_15classes',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_global_union_scratch_Epic_Kitchen',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_gradual[1,0]_weighted_loss_Epic_Kitchens_15classes',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -109,7 +109,7 @@ def get_args():
     parser.set_defaults(pin_mem=True)
 
     # dataset name
-    parser.add_argument('--data_set', default='SSV2', type=str, help='Other dataset options is: Kinetics-400, UCF101, HMDB51')
+    parser.add_argument('--data_set', default='Epic-Kitchens', type=str, help='Other dataset options is: SSV2, Kinetics-400, UCF101, HMDB51')
     parser.add_argument('--reprob', default=0.5, type=float, help='Probability that the Random Erasing operation will be performed.')
     parser.add_argument('--remode', default='const', type=str, help="mode: pixel color mode, one of 'const', 'rand', or 'pixel. \
         'const' - erase block is constant color of 0 for all channels \
@@ -237,11 +237,15 @@ def main(args):
 
     # initialize wandb
     wandb.init(
-        project="VideoMAE_BB_without_global_union",
-        group="BB_pretrained",
-        name="BB_without_GU_800_epochs_VideoMAE_scratch_Epic_Kitchens",
+        project="Epic-Kitchens",
+        group="pretrained_BB_without_GU",
+        name="800_epochs_VideoMAE_scratch_gradual[1,0]_weighted_loss_15classes",
         config=args,
         )
+
+
+#####set gradual loss weight
+    loss_weight_list = np.linspace(1, 0, args.epochs)
 
     start_time = time.time()
     for epoch in range(args.start_epoch, args.epochs):
@@ -249,7 +253,7 @@ def main(args):
             data_loader_train.sampler.set_epoch(epoch)
         if log_writer is not None:
             log_writer.set_step(epoch * num_training_steps_per_epoch)
-        train_stats = train_one_epoch_BB_no_global_union(
+        train_stats = train_one_epoch_BB_no_global_union_gradual(
             model, data_loader_train,
             optimizer, device, epoch, loss_scaler,
             args.clip_grad, log_writer=log_writer,
@@ -258,6 +262,7 @@ def main(args):
             wd_schedule_values=wd_schedule_values,
             patch_size=patch_size[0],
             normlize_target=args.normlize_target,
+            loss_weight=loss_weight_list[epoch]
         )
         # wandb log
         wandb_dict = {}

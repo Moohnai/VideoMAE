@@ -100,7 +100,7 @@ for i, item in data_val.iterrows():
     stop_timestamp = item["stop_timestamp"]
     stop_timestamps_val.append(stop_timestamp)
 
-
+ 
 EPIC_100_hand_objects_train = [
     "../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_hand_objects_train"
 ] * len(annot_paths_train)
