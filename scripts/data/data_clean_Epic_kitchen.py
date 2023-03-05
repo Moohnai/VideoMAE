@@ -130,7 +130,6 @@ def data_clean(video_root_path, idx, verbose=False):
             video_name, e))
         return [-1, -1, -1]
 
-
     # visulaize video and BBs
     
     # visual_bbx([video_data[0]], [hands_bbx_norm[0]])

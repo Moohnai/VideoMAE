@@ -23,11 +23,13 @@ from utils import  multiple_samples_collate, _load_checkpoint_for_ema
 import utils
 import modeling_finetune
 import wandb
+import random
+
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE fine-tuning and evaluation script for video classification', add_help=False)
-    parser.add_argument('--batch_size', default=6, type=int)
-    parser.add_argument('--epochs', default=50, type=int)
+    parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--epochs', default=100, type=int)
     parser.add_argument('--update_freq', default=1, type=int)
     parser.add_argument('--save_ckpt_freq', default=10, type=int)
 
@@ -124,7 +126,7 @@ def get_args():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # Finetuning params
-    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_videoMAE_original_Epic_Kitchens_15classes/checkpoint-799.pth', 
+    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_original_videoMAE_scratch_on_whole_Epic_Kitchens/checkpoint-799.pth', 
                         help='finetune from checkpoint')
     # parser.add_argument('--finetune', default='home', 
     #                     help='finetune from checkpoint')
@@ -135,12 +137,16 @@ def get_args():
     parser.set_defaults(use_mean_pooling=True)
     parser.add_argument('--use_cls', action='store_false', dest='use_mean_pooling')
 
+    parser.add_argument('--early_stopping', default=True, type=bool, help='early stopping')
+    parser.add_argument('--early_stopping_patience', default=10, type=int, help='early stopping patience')
+
+
     # Dataset parameters99
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb', type=str,
                         help='dataset path')
-    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/val.csv', type=str,
+    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/val.csv', type=str,
                         help='dataset path for evaluation')
-    parser.add_argument('--nb_classes', default=15, type=int,
+    parser.add_argument('--nb_classes', default=97, type=int,
                         help='number of the classification types')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_segments', type=int, default= 1)
@@ -148,9 +154,9 @@ def get_args():
     parser.add_argument('--sampling_rate', type=int, default= 4)
     parser.add_argument('--data_set', default='Epic-Kitchens', choices=['Epic-Kitchens', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_15classes_verb_original_videoMAE_pretrained_Wrandom_cropped_data_on_original_Epic_kitchens',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_all_classes_verb_original_videoMAE_pretrained_on_original_Epic_kitchens_early_stopping',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_15classes_verb_original_videoMAE_pretrained_Wrandom_cropped_data_on_original_Epic_kitchens',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_all_classes_verb_original_videoMAE_pretrained_on_original_Epic_kitchens_early_stopping',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -171,7 +177,7 @@ def get_args():
                         help='Perform evaluation only')
     parser.add_argument('--dist_eval', action='store_true', default=True,
                         help='Enabling distributed evaluation')
-    parser.add_argument('--num_workers', default=0, type=int)
+    parser.add_argument('--num_workers', default=4, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
@@ -206,6 +212,16 @@ def get_args():
     return parser.parse_args(), ds_init
 
 
+def seed_everything(seed=10):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+
+
+
 def main(args, ds_init):
     utils.init_distributed_mode(args)
 
@@ -218,10 +234,11 @@ def main(args, ds_init):
     # torch.cuda.set_device(3)
 
     # fix the seed for reproducibility
-    seed = args.seed + utils.get_rank()
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    # random.seed(seed)
+    # seed = args.seed + utils.get_rank()
+    # torch.manual_seed(seed)
+    # np.random.seed(seed)
+    # # random.seed(seed)
+    seed_everything(seed=args.seed)
 
     cudnn.benchmark = True
 
@@ -490,13 +507,13 @@ def main(args, ds_init):
 
     print(f"Start training for {args.epochs} epochs")
     
-    # #initialize wandb
-    # wandb.init(
-    #     project="Epic-Kitchens",
-    #     group="finetune_verb",
-    #     name="finetune_15classes_verb_pretrained_original_videoMAE_w/_random_cropped_data_on_original_Epic_kitchens_50_epochs",
-    #     config=args,
-    #     )
+    #initialize wandb
+    wandb.init(
+        project="Whole_Epic_Kitchens",
+        group="finetune_verb",
+        name="finetune_all_classes_verb_pretrained_original_videoMAE_on_original_Epic_kitchens_early_stopping",
+        config=args,
+        )
     
     start_time = time.time()
     max_accuracy = 0.0
@@ -551,10 +568,30 @@ def main(args, ds_init):
                          **{f'val_{k}': v for k, v in test_stats.items()},
                          'epoch': epoch,
                          'n_parameters': n_parameters}
+            
+            ## check for early stopping
+            if args.early_stopping:
+                # initialize best_val_loss either at the first epoch or if the model is reloaded and there is no best_val_loss defined
+                if epoch == 0 or not 'best_val_loss' in locals():
+                    best_val_loss = test_stats['loss']
+                    early_stopping_counter = 0
+                else:
+                    if test_stats['loss'] > best_val_loss:
+                        early_stopping_counter += 1
+                        print(f'Val loss increased from {best_val_loss:.4f} to {test_stats["loss"]:.4f}')
+                        print(f'Early stopping counter: {early_stopping_counter}')
+                    else:
+                        early_stopping_counter = 0
+                        best_val_loss = test_stats['loss']
+                
+                if early_stopping_counter >= args.early_stopping_patience:
+                    print(f'Early stopping at epoch {epoch} with best val loss {best_val_loss:.4f}')
+                    break
         else:
             log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                          'epoch': epoch,
                          'n_parameters': n_parameters}
+        
         if args.output_dir and utils.is_main_process():
             if log_writer is not None:
                 log_writer.flush()
