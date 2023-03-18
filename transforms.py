@@ -112,9 +112,27 @@ class GroupMultiScaleCrop_BB_no_global_union(object):
         ret_group = [transform(image=np.array(img), bboxes=[list(bbox)+['object']]) for img, bbox in zip(img_group, bboxs)]
         ret_img_group = [Image.fromarray(data['image']) for data in ret_group]
         ret_bboxs = [data['bboxes'] for data in ret_group]
-        # crop_img_group = [img.crop((offset_w, offset_h, offset_w + crop_w, offset_h + crop_h)) for img in img_group]
-        # ret_img_group = [img.resize((self.input_size[0], self.input_size[1]), self.interpolation) for img in crop_img_group]
-        return (ret_img_group, ret_bboxs)
+
+        # added from dataset
+        process_bbx_filtered= []
+        for bbx in ret_bboxs:
+            if len(bbx)>0:
+                process_bbx_filtered.append(np.array([bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]]))
+            elif len(bbx)<=0:
+                process_bbx_filtered.append(np.array([0, 0, 1, 1]))
+        process_bbx = np.array(process_bbx_filtered)
+
+
+        # if the object bbox is removed in the process of transform
+        if len(process_bbx) == 0:
+            bbox = np.array([0, 0, ret_img_group.size()[-2], ret_img_group.size()[-1]])
+      
+        else:
+            # bbox = np.array([np.min(process_bbx[:, 0]), np.min(process_bbx[:, 1]), np.max(process_bbx[:, 2]), np.max(process_bbx[:, 3])]) # x1, y1, xk, yk
+            bbox = process_bbx
+        
+
+        return (ret_img_group, bbox)
 
     def _sample_crop_size(self, im_size):
         image_w, image_h = im_size[0], im_size[1]

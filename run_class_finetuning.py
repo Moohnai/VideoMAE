@@ -28,8 +28,8 @@ import random
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE fine-tuning and evaluation script for video classification', add_help=False)
-    parser.add_argument('--batch_size', default=8, type=int)
-    parser.add_argument('--epochs', default=100, type=int)
+    parser.add_argument('--batch_size', default=6, type=int)
+    parser.add_argument('--epochs', default=50, type=int)
     parser.add_argument('--update_freq', default=1, type=int)
     parser.add_argument('--save_ckpt_freq', default=10, type=int)
 
@@ -126,7 +126,7 @@ def get_args():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # Finetuning params
-    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_original_videoMAE_scratch_on_whole_Epic_Kitchens/checkpoint-799.pth', 
+    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_gradual[1,0]_weighted_loss_Epic_Kitchens_15classes/checkpoint-799.pth', 
                         help='finetune from checkpoint')
     # parser.add_argument('--finetune', default='home', 
     #                     help='finetune from checkpoint')
@@ -142,11 +142,11 @@ def get_args():
 
 
     # Dataset parameters99
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class', type=str,
                         help='dataset path')
-    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/val.csv', type=str,
+    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/val.csv', type=str,
                         help='dataset path for evaluation')
-    parser.add_argument('--nb_classes', default=97, type=int,
+    parser.add_argument('--nb_classes', default=15, type=int,
                         help='number of the classification types')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_segments', type=int, default= 1)
@@ -154,9 +154,9 @@ def get_args():
     parser.add_argument('--sampling_rate', type=int, default= 4)
     parser.add_argument('--data_set', default='Epic-Kitchens', choices=['Epic-Kitchens', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_all_classes_verb_original_videoMAE_pretrained_on_original_Epic_kitchens_early_stopping',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_15_classes_verb_videoMAE_BB_gradual(1,0)_pretrained_on_original_Epic_kitchens',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_all_classes_verb_original_videoMAE_pretrained_on_original_Epic_kitchens_early_stopping',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_15_classes_verb_videoMAE_BB_gradual(1,0)_pretrained_on_original_Epic_kitchens',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -509,9 +509,9 @@ def main(args, ds_init):
     
     #initialize wandb
     wandb.init(
-        project="Whole_Epic_Kitchens",
+        project="Epic_Kitchens",
         group="finetune_verb",
-        name="finetune_all_classes_verb_pretrained_original_videoMAE_on_original_Epic_kitchens_early_stopping",
+        name="finetune_15classes_verb_pretrained_BB_without_GU_Gradual[1,0]_50_epochs",
         config=args,
         )
     

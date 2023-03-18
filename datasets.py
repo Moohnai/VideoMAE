@@ -1,7 +1,7 @@
 import os
 from torchvision import transforms
 from transforms import *
-from masking_generator import TubeMaskingGenerator
+from masking_generator import TubeMaskingGenerator, TubeMaskingGenerator_BB
 from kinetics import VideoClsDataset, VideoMAE, VideoMAE_BB, VideoMAE_BB_no_global_union
 from ssv2 import SSVideoClsDataset
 from epic_kitchens import EpicVideoClsDataset, EpicVideoClsDataset_BB_focused
@@ -80,13 +80,13 @@ class DataAugmentationForVideoMAE_BB_no_global_union(object):
             normalize,
         ])
         if args.mask_type == 'tube':
-            self.masked_position_generator = TubeMaskingGenerator(
+            self.masked_position_generator = TubeMaskingGenerator_BB(
                 args.window_size, args.mask_ratio
             )
 
     def __call__(self, images):
         process_data, process_bbx = self.transform(images)
-        return process_data, process_bbx, self.masked_position_generator()
+        return process_data, process_bbx, self.masked_position_generator(process_bbx)
 
     def __repr__(self):
         repr = "(DataAugmentationForVideoMAE,\n"

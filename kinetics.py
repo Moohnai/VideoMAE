@@ -1036,28 +1036,26 @@ class VideoMAE_BB_no_global_union(torch.utils.data.Dataset):
 
         process_data, process_bbx, mask = self.transform((images, frames_bbox)) # T*C,H,W
 
-        # self.visual_union_bbx_Epic_Kitchens(process_data, [np.array(list(bbx[0][:4])) for bbx in process_bbx], video_name.split('/')[-1].split('.')[0])
-
-        # process_bbx = np.array([[bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]] for bbx in process_bbx if len(bbx)>0]) # x1, y1, x2, y2
-        process_bbx_filtered= []
-        for bbx in process_bbx:
-            if len(bbx)>0:
-                process_bbx_filtered.append(np.array([bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]]))
-            elif len(bbx)<=0:
-                process_bbx_filtered.append(np.array([0, 0, 1, 1]))
-        process_bbx = np.array(process_bbx_filtered)
+        ####moved it to GroupMultiScaleCrop_BB_no_global_union
+        # process_bbx_filtered= []
+        # for bbx in process_bbx:
+        #     if len(bbx)>0:
+        #         process_bbx_filtered.append(np.array([bbx[0][0], bbx[0][1], bbx[0][2], bbx[0][3]]))
+        #     elif len(bbx)<=0:
+        #         process_bbx_filtered.append(np.array([0, 0, 1, 1]))
+        # process_bbx = np.array(process_bbx_filtered)
 
 
-        # if the object bbox is removed in the process of transform
-        if len(process_bbx) == 0:
-            bbox = np.array([0, 0, process_data.size()[-2], process_data.size()[-1]])
+        # # if the object bbox is removed in the process of transform
+        # if len(process_bbx) == 0:
+        #     bbox = np.array([0, 0, process_data.size()[-2], process_data.size()[-1]])
       
-        else:
-            # bbox = np.array([np.min(process_bbx[:, 0]), np.min(process_bbx[:, 1]), np.max(process_bbx[:, 2]), np.max(process_bbx[:, 3])]) # x1, y1, xk, yk
-            bbox = process_bbx
+        # else:
+        #     # bbox = np.array([np.min(process_bbx[:, 0]), np.min(process_bbx[:, 1]), np.max(process_bbx[:, 2]), np.max(process_bbx[:, 3])]) # x1, y1, xk, yk
+        #     bbox = process_bbx
         process_data = process_data.view((self.new_length, 3) + process_data.size()[-2:]).transpose(0,1)  # T*C,H,W -> T,C,H,W -> C,T,H,W
         
-        return (process_data, torch.LongTensor(bbox), mask)
+        return (process_data, torch.LongTensor(process_bbx), mask)
 
     def __len__(self):
         return len(self.clips)
