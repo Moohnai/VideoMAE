@@ -151,9 +151,6 @@ def main(args):
 
     device = torch.device(args.device)
 
-    # set gpu device
-    torch.cuda.set_device(3)
-
     # fix the seed for reproducibility
     seed = args.seed + utils.get_rank()
     torch.manual_seed(seed)
