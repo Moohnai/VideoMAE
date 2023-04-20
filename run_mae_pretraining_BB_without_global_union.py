@@ -86,9 +86,9 @@ def get_args():
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 2)
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_only_inside_BB_masked_Epic_Kitchens_15classes',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_only_inside_BB_masked_0.9_0.9mask_Epic_Kitchens_15classes',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_only_inside_BB_masked_Epic_Kitchens_15classes',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_only_inside_BB_masked_0.9_0.9mask_Epic_Kitchens_15classes',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -239,7 +239,7 @@ def main(args):
     wandb.init(
         project="Epic-Kitchens",
         group="pretrained_BB_without_GU",
-        name="800_epochs_VideoMAE_scratch_only_inside_BB_masked_15classes",
+        name="800_epochs_VideoMAE_scratch_only_inside_BB_masked_0.9_0.9mask_15classes",
         config=args,
         )
 

@@ -27,8 +27,8 @@ import wandb
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE fine-tuning and evaluation script for video classification', add_help=False)
-    parser.add_argument('--batch_size', default=6, type=int)
-    parser.add_argument('--epochs', default=200, type=int)
+    parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--epochs', default=100, type=int)
     parser.add_argument('--update_freq', default=1, type=int)
     parser.add_argument('--save_ckpt_freq', default=10, type=int)
 
@@ -147,7 +147,7 @@ def get_args():
                         help='dataset path')
     parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/val.csv', type=str,
                         help='dataset path for evaluation')
-    parser.add_argument('--nb_classes', default=15, type=int,
+    parser.add_argument('--nb_classes', default=97, type=int,
                         help='number of the classification types')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_segments', type=int, default= 1)
@@ -302,7 +302,7 @@ def main(args, ds_init):
     if dataset_test is not None:
         data_loader_test = torch.utils.data.DataLoader(
             dataset_test, sampler=sampler_test,
-            batch_size=args.batch_size*5,
+            batch_size=args.batch_size,#*5
             num_workers=args.num_workers,
             pin_memory=args.pin_mem,
             drop_last=False

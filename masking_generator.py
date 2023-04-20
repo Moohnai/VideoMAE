@@ -55,26 +55,25 @@ class TubeMaskingGenerator_BB:
                     mask_per_frame[j*self.width + k] = 1
                     index.append(j*self.width + k)
                 
-        # create a one for whole patches
-        f = np.ones(self.num_patches_per_frame)
+        # create a zero for whole patches
+        f = np.zeros(self.num_patches_per_frame)
         # shuffle the index
         np.random.shuffle(index)
         # select 90% of the patches in index
-        selected_index = index[:int(len(index)*0.9)]
+        cap_index = min(self.num_masks_per_frame, int(len(index)*0.90))#0.9
+        selected_index = index[:cap_index]
         # set the mask to 0 for the selected patches
         for i in selected_index:
-            f[i] = 0
+            f[i] = 1
 
         # total number of patches
-        total_patches = self.height * self.width
-        total_masks = int(total_patches * self.mask_ratio)
-        remaining_masks = total_masks - len(selected_index)
-        remaining_index = np.setdiff1d(np.arange(total_patches), selected_index)
+        remaining_masks = self.num_masks_per_frame - len(selected_index)
+        remaining_index = np.setdiff1d(np.arange(self.num_masks_per_frame), selected_index)
 
         # select the remaining masks randomly
         np.random.shuffle(remaining_index)
         for i in remaining_index[:remaining_masks]:
-            f[i] = 0
+            f[i] = 1
 
         # mask_per_frame = np.hstack([
         #     np.zeros(self.num_patches_per_frame - self.num_masks_per_frame),

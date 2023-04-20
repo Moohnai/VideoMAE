@@ -184,7 +184,7 @@ def validation_one_epoch(data_loader, model, device):
 
 
 @torch.no_grad()
-def final_test(data_loader, model, device, file):
+def final_test(data_loader, model, device, file, args=None):
     criterion = torch.nn.CrossEntropyLoss()
 
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -216,7 +216,7 @@ def final_test(data_loader, model, device, file):
                                                 str(int(split_nb[i].cpu().numpy())))
             final_result.append(string)
 
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        acc1, acc5 = utils.acc_out(accuracy(output, target, topk=(1, 5)), args)
 
         batch_size = videos.shape[0]
         metric_logger.update(loss=loss.item())

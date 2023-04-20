@@ -15,6 +15,7 @@ from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
 import modeling_pretrain
 import wandb
+import random
 
 
 
@@ -22,7 +23,7 @@ def get_args():
     parser = argparse.ArgumentParser('VideoMAE pre-training script', add_help=False)
     parser.add_argument('--batch_size', default=12, type=int)
     parser.add_argument('--epochs', default=800 , type=int)
-    parser.add_argument('--save_ckpt_freq', default=20, type=int)
+    parser.add_argument('--save_ckpt_freq', default=50, type=int)
 
     # Model parameters
     parser.add_argument('--model', default='pretrain_videomae_base_patch16_224', type=str, metavar='MODEL',
@@ -143,7 +144,18 @@ def get_model(args):
     return model
 
 
+def seed_everything(seed=10):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+
+
 def main(args):
+    seed_everything(seed=args.seed)
+    
     utils.init_distributed_mode(args)
 
     print(args)

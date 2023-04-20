@@ -69,13 +69,13 @@ def train_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: to
         loss_value = loss.item()
 
         #######################################################
-        #visualize the reconstruction
-        out = videos_patch.clone()
-        out[bool_masked_pos] = outputs.clone().float().reshape(-1, C)
-        out = rearrange(out, 'b n (p c) -> b n p c', c = 3)
-        out_denorm = out.reshape(B,1568,512,3) * tube_std + tube_mean
-        reconstructed_out= rearrange(out_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
-            t=8, h=14, w=14)
+        # #visualize the reconstruction
+        # out = videos_patch.clone()
+        # out[bool_masked_pos] = outputs.clone().float().reshape(-1, C)
+        # out = rearrange(out, 'b n (p c) -> b n p c', c = 3)
+        # out_denorm = out.reshape(B,1568,512,3) * tube_std + tube_mean
+        # reconstructed_out= rearrange(out_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
+        #     t=8, h=14, w=14)
 
         # # save the video of the reconstruction and the original video
                     

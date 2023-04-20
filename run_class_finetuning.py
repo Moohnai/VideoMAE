@@ -126,7 +126,7 @@ def get_args():
                         help='How to apply mixup/cutmix params. Per "batch", "pair", or "elem"')
 
     # Finetuning params
-    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_gradual[1,0]_weighted_loss_Epic_Kitchens_15classes/checkpoint-799.pth', 
+    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_only_inside_BB_masked_0.75_0.9mask_Epic_Kitchens_15classes/checkpoint-799.pth', 
                         help='finetune from checkpoint')
     # parser.add_argument('--finetune', default='home', 
     #                     help='finetune from checkpoint')
@@ -154,9 +154,9 @@ def get_args():
     parser.add_argument('--sampling_rate', type=int, default= 4)
     parser.add_argument('--data_set', default='Epic-Kitchens', choices=['Epic-Kitchens', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_15_classes_verb_videoMAE_BB_gradual(1,0)_pretrained_on_original_Epic_kitchens',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_15_classes_verb_BB_no_GU_videoMAE_only_inside_BB_masked_0.75_0.9mask_Epic_Kitchens_new',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_15_classes_verb_videoMAE_BB_gradual(1,0)_pretrained_on_original_Epic_kitchens',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_15_classes_verb_BB_no_GU_videoMAE_only_inside_BB_masked_0.75_0.9mask_Epic_Kitchens_new',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
@@ -491,7 +491,7 @@ def main(args, ds_init):
 
     if args.eval:
         preds_file = os.path.join(args.output_dir, str(global_rank) + '.txt')
-        test_stats = final_test(data_loader_test, model, device, preds_file)
+        test_stats = final_test(data_loader_test, model, device, preds_file, args)
         torch.distributed.barrier()
         if global_rank == 0:
             print("Start merging results...")
@@ -511,7 +511,7 @@ def main(args, ds_init):
     wandb.init(
         project="Epic_Kitchens",
         group="finetune_verb",
-        name="finetune_15classes_verb_pretrained_BB_without_GU_Gradual[1,0]_50_epochs",
+        name="finetune_15_classes_verb_BB_no_GU_videoMAE_only_inside_BB_masked_0.75_0.9mask_Epic_Kitchens_new_50_epochs",
         config=args,
         )
     
@@ -607,7 +607,7 @@ def main(args, ds_init):
             _load_checkpoint_for_ema(model_ema, client_states['model_ema'])
 
     preds_file = os.path.join(args.output_dir, str(global_rank) + '.txt')
-    test_stats = final_test(data_loader_test, model, device, preds_file)
+    test_stats = final_test(data_loader_test, model, device, preds_file, args)
     torch.distributed.barrier()
     if global_rank == 0:
         print("Start merging results...")

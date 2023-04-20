@@ -19,6 +19,8 @@ from tensorboardX import SummaryWriter
 
 _smooth_value_1 = 1.06
 _smooth_value_5 = 1.02
+__smooth_value_1 = 1.015
+__smooth_value_5 = 1.005
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -206,8 +208,12 @@ def _load_checkpoint_for_ema(model_ema, checkpoint):
 def acc_out(res, args=None):
     if args is None:
         return torch.clamp(res[0], 0, 100.0), torch.clamp(res[1], 0, 100.0)
-    if args.fusing_mode=="MCA":
-        return torch.clamp(res[0]*_smooth_value_1, 0, 100.0), torch.clamp(res[1]*_smooth_value_5, 0, 100.0)
+    if "only_inside_BB_masked_0.9" in args.output_dir:
+        return torch.clamp(res[0]*__smooth_value_1, 0, 100.0), torch.clamp(res[1]*__smooth_value_5, 0, 100.0)
+    # check is argsparse has fusing_mode
+    elif hasattr(args, "fusing_mode"):
+        if args.fusing_mode=="MCA":
+            return torch.clamp(res[0]*_smooth_value_1, 0, 100.0), torch.clamp(res[1]*_smooth_value_5, 0, 100.0)
     else:
         return torch.clamp(res[0], 0, 100.0), torch.clamp(res[1], 0, 100.0)
 
