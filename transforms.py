@@ -135,6 +135,8 @@ class GroupMultiScaleCrop_BB_no_global_union(object):
         return (ret_img_group, bbox)
 
     def _sample_crop_size(self, im_size):
+        # fix random seed for reproducibility
+        np.random.seed(10)
         image_w, image_h = im_size[0], im_size[1]
 
         # find a crop size
@@ -288,6 +290,8 @@ class GroupMultiScaleCrop(object):
         return (ret_img_group, label)
 
     def _sample_crop_size(self, im_size):
+        # fix random seed for reproducibility
+        np.random.seed(10)
         image_w, image_h = im_size[0], im_size[1]
 
         # find a crop size

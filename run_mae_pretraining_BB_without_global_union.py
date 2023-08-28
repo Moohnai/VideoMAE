@@ -15,13 +15,13 @@ from utils import NativeScalerWithGradNormCount as NativeScaler
 import utils
 import modeling_pretrain
 import wandb
- 
+import random
 
 def get_args():
     parser = argparse.ArgumentParser('VideoMAE pre-training script', add_help=False)
-    parser.add_argument('--batch_size', default=12, type=int)
+    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--epochs', default=800 , type=int)
-    parser.add_argument('--save_ckpt_freq', default=20, type=int)
+    parser.add_argument('--save_ckpt_freq', default=50, type=int)
 
     # Model parameters
     parser.add_argument('--model', default='pretrain_videomae_base_patch16_224', type=str, metavar='MODEL',
@@ -81,18 +81,18 @@ def get_args():
                         help='Training interpolation (random, bilinear, bicubic default: "bicubic")')
 
     # Dataset parameters
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/train.csv', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/train.csv', type=str,
                         help='dataset path')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 2)
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_only_inside_BB_masked_0.9_0.9mask_Epic_Kitchens_15classes',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/Final_pretrain_BB_videoMAE_inside_BB_masked_0.75_global_mask_0.9_Epic_Kitchens_whole_classes',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/pretrain_BB_no_GU_videoMAE_only_inside_BB_masked_0.9_0.9mask_Epic_Kitchens_15classes',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/Final_pretrain_BB_videoMAE_inside_BB_masked_0.75_global_mask_0.9_Epic_Kitchens_whole_classes',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
-    parser.add_argument('--seed', default=0, type=int)
+    parser.add_argument('--seed', default=10, type=int)
     # parser.add_argument('--resume', default='/home/mona/VideoMAE/results/checkpoint.pth', help='resume from checkpoint')
     parser.add_argument('--resume', default='', help='resume from checkpoint')
     parser.add_argument('--auto_resume', action='store_true')
@@ -144,7 +144,18 @@ def get_model(args):
     return model
 
 
+def seed_everything(seed=10):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+
+
 def main(args):
+    
+    seed_everything(seed=args.seed)
     utils.init_distributed_mode(args)
 
     print(args)
@@ -237,9 +248,9 @@ def main(args):
 
     # initialize wandb
     wandb.init(
-        project="Epic-Kitchens",
-        group="pretrained_BB_without_GU",
-        name="800_epochs_VideoMAE_scratch_only_inside_BB_masked_0.9_0.9mask_15classes",
+        project="Final_Epic-Kitchens",
+        group="pretrained_BB_MOFO_masking",
+        name="800_epochs_VideoMAE_scratch_MOFO_inside_BB_masked_0.75_global_mask_0.9_Epic_Kitchens_whole_classes",
         config=args,
         )
 

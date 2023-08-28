@@ -60,7 +60,7 @@ class TubeMaskingGenerator_BB:
         # shuffle the index
         np.random.shuffle(index)
         # select 90% of the patches in index
-        cap_index = min(self.num_masks_per_frame, int(len(index)*0.90))#0.9
+        cap_index = min(self.num_masks_per_frame, int(len(index)*0.75))#0.9
         selected_index = index[:cap_index]
         # set the mask to 0 for the selected patches
         for i in selected_index:

@@ -470,8 +470,8 @@ class VisionTransformer_BB_focused(nn.Module):
         self.soft_att_global = SoftAttention(feature_dim=embed_dim, step_dim=1, bias=True)
 
         # define multi-head cross attentions and corresponding layernorms
-        MAC_depth = 2
-        MAC_num_heads = 2
+        MAC_depth = 1
+        MAC_num_heads = 3
         self.local_MCA = nn.ModuleList([
             MCA(
                 dim=embed_dim, num_heads=MAC_num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,

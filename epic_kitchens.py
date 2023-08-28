@@ -403,15 +403,15 @@ class EpicVideoClsDataset_BB_focused(Dataset):
 
         if mode == 'train':
             print(f"Loading {mode} bbox json file...")
-            with open('../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/EPIC_100_BB_smooth_train.json', "r", encoding="utf-8") as f:
+            with open('../../mnt/welles/scratch/datasets/SSV2/Unsupervised_BB_SSV2_train.json', "r", encoding="utf-8") as f:
                 Total_video_BB = orjson.loads(f.read())
         elif mode == 'validation':
             print(f"Loading {mode} bbox json file...")
-            with open('../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/EPIC_100_BB_smooth_validation.json', "r", encoding="utf-8") as f:
+            with open('../../mnt/welles/scratch/datasets/SSV2/Unsupervised_BB_SSV2_validation.json', "r", encoding="utf-8") as f:
                 Total_video_BB = orjson.loads(f.read())
         elif mode == 'test':
             print(f"Loading {mode} bbox json file...")
-            with open('../../mnt/welles/scratch/datasets/Epic-kitchen/EPIC-KITCHENS/EPIC_100_action_recognition/EPIC_100_BB_smooth_validation.json', "r", encoding="utf-8") as f:
+            with open('../../mnt/welles/scratch/datasets/SSV2/Unsupervised_BB_SSV2_test.json', "r", encoding="utf-8") as f:
                 Total_video_BB = orjson.loads(f.read())
         self.bb_data = Total_video_BB
 

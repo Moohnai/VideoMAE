@@ -129,7 +129,7 @@ def get_args():
     # Finetuning params
     # parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_original_Epic_Kitchens/?????????checkpoint.pth', 
     #                     help='finetune from checkpoint')
-    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/pretrain_videoMAE_original_Epic_Kitchens_15classes/checkpoint-799.pth', 
+    parser.add_argument('--finetune', default='/home/mona/VideoMAE/results/Final_pretrain_BB_videoMAE_inside_BB_masked_0.75_global_mask_0.9_SSV2_whole_classes/checkpoint-199.pth', 
                         help='finetune from checkpoint')
     parser.add_argument('--model_key', default='model|module', type=str)
     parser.add_argument('--model_prefix', default='', type=str)
@@ -140,28 +140,28 @@ def get_args():
     parser.add_argument('--fusing_mode', default='MCA', type=str, choices=['soft_attn', 'weighted_mean', 'MCA', 'org'], help='fusing mode for inner and outer patches')
     parser.add_argument('--only_finetune_last', default=True, type=bool, help='only finetune last layer and attention layer only if the model is fine-tuned')
     parser.add_argument('--early_stopping', default=True, type=bool, help='early stopping')
-    parser.add_argument('--early_stopping_patience', default=5, type=int, help='early stopping patience')
+    parser.add_argument('--early_stopping_patience', default=10, type=int, help='early stopping patience')
 
     # Dataset parameters99
-    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class', type=str,
+    parser.add_argument('--data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation', type=str,
                         help='dataset path')
-    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/Epic_kitchen/annotation/verb/15class/val.csv', type=str,
+    parser.add_argument('--eval_data_path', default='/home/mona/VideoMAE/dataset/somethingsomething/annotation/val.csv', type=str,
                         help='dataset path for evaluation')
-    parser.add_argument('--nb_classes', default=97, type=int,
+    parser.add_argument('--nb_classes', default=174, type=int,
                         help='number of the classification types')
     parser.add_argument('--imagenet_default_mean_and_std', default=True, action='store_true')
     parser.add_argument('--num_segments', type=int, default= 1)
     parser.add_argument('--num_frames', type=int, default= 16)
     parser.add_argument('--sampling_rate', type=int, default= 4)
-    parser.add_argument('--data_set', default='Epic-Kitchens', choices=['Epic-Kitchens', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
+    parser.add_argument('--data_set', default='SSV2', choices=['Epic-Kitchens', 'Kinetics-400', 'SSV2', 'UCF101', 'HMDB51','image_folder'],
                         type=str, help='dataset')
-    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/finetune_BB_focused_2_head_2_depth_15classes_verb_original_videoMAE_on_original_Epic_kitchens_early_stopping',
+    parser.add_argument('--output_dir', default='/home/mona/VideoMAE/results/Final_finetune_BB_focused_3_head_1_depth_all_classes_MOFO_0.75_200videoMAE_on_SSV2_early_stopping',
                         help='path where to save, empty for no saving')
-    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/finetune_BB_focused_2_head_2_depth_15classes_verb_original_videoMAE_on_original_Epic_kitchens_early_stopping',
+    parser.add_argument('--log_dir', default='/home/mona/VideoMAE/results/Final_finetune_BB_focused_3_head_1_depth_all_classes_MOFO_0.75_200videoMAE_on_SSV2_early_stopping',
                         help='path where to tensorboard log')
     parser.add_argument('--device', default='cuda',
                         help='device to use for training / testing')
-    parser.add_argument('--seed', default=0, type=int)
+    parser.add_argument('--seed', default= 10, type=int)
     parser.add_argument('--resume', default='',
                         help='resume from checkpoint')
     parser.add_argument('--auto_resume', action='store_true')
@@ -184,7 +184,7 @@ def get_args():
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
     parser.set_defaults(pin_mem=True)
 
-    parser.add_argument('--classtype', default='verb', choices=['verb', 'noun', 'action'], type=str, help='type of classification')
+    parser.add_argument('--classtype', default='action', choices=['verb', 'noun', 'action'], type=str, help='type of classification')
 
     # distributed training parameters
     parser.add_argument('--world_size', default=1, type=int,
@@ -510,9 +510,9 @@ def main(args, ds_init):
     
     # initialize wandb
     wandb.init(
-        project="Epic_Kitchens",
-        group="finetune_verb_BB_focused",
-        name=f"finetune_BB_focused_{args.fusing_mode}_2_head_2_depth_15classes_verb_pretrained_original_videoMAE_on_original_Epic_kitchens_early_stopping",
+        project="Final_SSV2",
+        group="finetune_BB_focused",
+        name=f"finetune_BB_focused_{args.fusing_mode}_3_head_1_depth_allclasses_MOFO_0.75_200videoMAE_on_SSV2_early_stopping",
         config=args,
         )
     

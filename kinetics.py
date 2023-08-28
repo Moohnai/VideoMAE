@@ -516,6 +516,8 @@ class VideoMAE(torch.utils.data.Dataset):
         return clips
 
     def _sample_train_indices(self, num_frames):
+        # fix random seed for each video
+        np.random.seed(10)
         average_duration = (num_frames - self.skip_length + 1) // self.num_segments
         if average_duration > 0:
             offsets = np.multiply(list(range(self.num_segments)),
@@ -1034,7 +1036,11 @@ class VideoMAE_BB_no_global_union(torch.utils.data.Dataset):
 
         # self.visual_union_bbx_Epic_Kitchens(images, frames_bbox)
 
-        process_data, process_bbx, mask = self.transform((images, frames_bbox)) # T*C,H,W
+        try:
+            process_data, process_bbx, mask = self.transform((images, frames_bbox)) # T*C,H,W
+        except Exception as e:
+            print(f"error in video {video_name}")
+            raise e
 
         ####moved it to GroupMultiScaleCrop_BB_no_global_union
         # process_bbx_filtered= []
@@ -1079,6 +1085,8 @@ class VideoMAE_BB_no_global_union(torch.utils.data.Dataset):
         return clips
 
     def _sample_train_indices(self, num_frames):
+        # fix random seed for each video
+        np.random.seed(10)
         average_duration = (num_frames - self.skip_length + 1) // self.num_segments
         if average_duration > 0:
             offsets = np.multiply(list(range(self.num_segments)),

@@ -69,15 +69,26 @@ def train_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: to
         loss_value = loss.item()
 
         #######################################################
-        # #visualize the reconstruction
-        # out = videos_patch.clone()
-        # out[bool_masked_pos] = outputs.clone().float().reshape(-1, C)
-        # out = rearrange(out, 'b n (p c) -> b n p c', c = 3)
-        # out_denorm = out.reshape(B,1568,512,3) * tube_std + tube_mean
-        # reconstructed_out= rearrange(out_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
-        #     t=8, h=14, w=14)
+               #######################################################
+        #visualize the reconstruction
+        out = videos_patch.clone()
+        out[bool_masked_pos] = outputs.clone().float().reshape(-1, C)
+        out = rearrange(out, 'b n (p c) -> b n p c', c = 3)
+        out_denorm = out.reshape(B,1568,512,3) * tube_std + tube_mean
+        reconstructed_out= rearrange(out_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
+            t=8, h=14, w=14)
+            
+        masked_videos = torch.ones_like(videos_patch)
+        masked_videos[bool_masked_pos] = torch.zeros_like(outputs.clone().float().reshape(-1, C))
+        masked_videos = rearrange(masked_videos, 'b n (p c) -> b n p c', c = 3)
+        masked_videos_denorm = masked_videos.reshape(B,1568,512,3) 
+        masked_videos_out= rearrange(masked_videos_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
+            t=8, h=14, w=14)
+        masked_videos_out = masked_videos_out * unnorm_videos
+        
 
-        # # save the video of the reconstruction and the original video
+
+        # save the video of the reconstruction and the original video
                     
         # for i in range (unnorm_videos.shape[0]):
         #     out_vis = cv2.VideoWriter(filename=f'./input_video_{i}_original.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=4, frameSize=(224, 224), isColor=True)
@@ -91,48 +102,68 @@ def train_one_epoch(model: torch.nn.Module, data_loader: Iterable, optimizer: to
         #     out_vis.release()
         
                     
-        # for i in range (reconstructed_out.shape[0]):
-        #     out_vis = cv2.VideoWriter(filename=f'./reconstructed_video_{i}.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=4, frameSize=(224, 224), isColor=True)
-        #     for j in range (reconstructed_out.shape[2]):
-        #         frame = reconstructed_out[i, :, j, :, :].detach().cpu().numpy()
-        #         frame = frame.transpose(1, 2, 0)
-        #         # clip values to [0, 1]
-        #         frame = np.clip(frame, 0, 1)
-        #         frame = (frame * 255).astype(np.uint8)
-        #         out_vis.write(np.array(frame)[:,:,::-1].astype(np.uint8))
-        #     out_vis.release()
+        for i in range (reconstructed_out.shape[0]):
+            out_vis = cv2.VideoWriter(filename=f'./reconstructed_video_{i}.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=4, frameSize=(224, 224), isColor=True)
+            for j in range (reconstructed_out.shape[2]):
+                frame = reconstructed_out[i, :, j, :, :].detach().cpu().numpy()
+                frame = frame.transpose(1, 2, 0)
+                # clip values to [0, 1]
+                frame = np.clip(frame, 0, 1)
+                frame = (frame * 255).astype(np.uint8)
+            #     out_vis.write(np.array(frame)[:,:,::-1].astype(np.uint8))
+            # out_vis.release()
  
 
 
 
-        #     img_1 = unnorm_videos[i, :, 0, :, :].detach().cpu().numpy()
-        #     # convert channel first to channel last
-        #     img_1 = img_1.transpose(1, 2, 0)
-        #     img_2 = reconstructed_out[i, :, 0, :, :].detach().cpu().numpy()
-        #     img_2 = img_2.transpose(1, 2, 0)
+                img_1 = unnorm_videos[i, :, j, :, :].detach().cpu().numpy()
+                # convert channel first to channel last
+                img_1 = img_1.transpose(1, 2, 0)
+                img_2 = reconstructed_out[i, :, j, :, :].detach().cpu().numpy()
+                img_2 = img_2.transpose(1, 2, 0)
+                img_3 = masked_videos_out[i, :, j, :, :].detach().cpu().numpy()
+                img_3 = img_3.transpose(1, 2, 0)
 
-        #     # save the reconstructed image
-        #     model_name = model.__class__.__name__
-        #     save_path = './'#os.path.join('VideoMAE', 'reconstruction')
-        #     fig, ax = plt.subplots(1, 2, figsize=(10, 8))
-        #     # set title
-        #     fig.suptitle(
-        #         "\n".join(
-        #             textwrap.wrap(
-        #                 "Reconstruction of the video, Model: " + model_name, 60
-        #             )
-        #         )
-        #     )
-        #     plt.subplot(1, 2, 1)
-        #     plt.title("Original video")
-        #     plt.imshow(img_1)
-        #     plt.subplot(1, 2, 2)
-        #     plt.title("Reconstructed video")
-        #     plt.imshow(img_2)
-        #     plt.savefig(os.path.join(save_path, model_name + f'_reconstruction{i}.png'))
-        #     plt.close()
+                # save the reconstructed image
+                model_name = model.__class__.__name__
+                save_path = f'./reconstruction/VideoMAE/video_{i}'#os.path.join('VideoMAE', 'reconstruction')
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path, exist_ok=True)
 
+                # fig, ax = plt.subplots(1, 2, figsize=(10, 8))
+                # # set title
+                # fig.suptitle(
+                #     "\n".join(
+                #         textwrap.wrap(
+                #             "Reconstruction of the video, Model: " + model_name, 60
+                #         )
+                #     )
+                # )
+                # plt.subplot(1, 2, 1)
+                # plt.title("Original video")
+                # plt.imshow(img_1)
+                # plt.subplot(1, 2, 2)
+                # plt.title("Reconstructed video")
+                # plt.imshow(img_2)
+                # plt.savefig(os.path.join(save_path, model_name + f'_both_{i}-{j}.png'))
+                # plt.close()
 
+                # plot each image separately
+                plt.imshow(img_1)
+                plt.axis('off')
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_path, model_name + f'_original{i}-{j}.png'), transparent = True, bbox_inches = 'tight', pad_inches = 0)
+                plt.close()
+                plt.imshow(img_2)
+                plt.axis('off')
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_path, model_name + f'_reconstructed{i}-{j}.png'), transparent = True, bbox_inches = 'tight', pad_inches = 0)
+                plt.close()
+                plt.imshow(img_3)
+                plt.axis('off')
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_path, model_name + f'_masked{i}-{j}.png'), transparent = True, bbox_inches = 'tight', pad_inches = 0)
+                plt.close()
         ########################################################
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
@@ -517,6 +548,10 @@ def train_one_epoch_BB_no_global_union_gradual(model: torch.nn.Module, data_load
                 videos_squeeze = rearrange(unnorm_videos, 'b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2) c', p0=2, p1=patch_size, p2=patch_size)
                 videos_norm = (videos_squeeze - videos_squeeze.mean(dim=-2, keepdim=True)
                     ) / (videos_squeeze.var(dim=-2, unbiased=True, keepdim=True).sqrt() + 1e-6)
+                ###########
+                tube_mean = videos_squeeze.mean(dim=-2, keepdim=True)
+                tube_std = videos_squeeze.var(dim=-2, unbiased=True, keepdim=True).sqrt() + 1e-6
+                ###########
                 # we find that the mean is about 0.48 and standard deviation is about 0.08.
                 videos_patch = rearrange(videos_norm, 'b n p c -> b n (p c)')
                 # update video masks 
@@ -549,6 +584,118 @@ def train_one_epoch_BB_no_global_union_gradual(model: torch.nn.Module, data_load
             loss = loss.mean()
 
         loss_value = loss.item()
+
+        
+        #######################################################
+        
+        #######################################################
+        #visualize the reconstruction
+        out = videos_patch.clone()
+        out[bool_masked_pos] = outputs.clone().float().reshape(-1, C)
+        out = rearrange(out, 'b n (p c) -> b n p c', c = 3)
+        out_denorm = out.reshape(B,1568,512,3) * tube_std + tube_mean
+        reconstructed_out= rearrange(out_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
+            t=8, h=14, w=14)
+            
+        masked_videos = torch.ones_like(videos_patch)
+        masked_videos[bool_masked_pos] = torch.zeros_like(outputs.clone().float().reshape(-1, C))
+        masked_videos = rearrange(masked_videos, 'b n (p c) -> b n p c', c = 3)
+        masked_videos_denorm = masked_videos.reshape(B,1568,512,3) 
+        masked_videos_out= rearrange(masked_videos_denorm, 'b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)', p0=2, p1=patch_size, p2=patch_size,
+            t=8, h=14, w=14)
+        masked_videos_out = masked_videos_out * unnorm_videos
+        
+
+
+        # save the video of the reconstruction and the original video
+                    
+        # for i in range (unnorm_videos.shape[0]):
+        #     out_vis = cv2.VideoWriter(filename=f'./input_video_{i}_original.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=4, frameSize=(224, 224), isColor=True)
+        #     for j in range (unnorm_videos.shape[2]):
+        #         frame = unnorm_videos[i, :, j, :, :].detach().cpu().numpy()
+        #         frame = frame.transpose(1, 2, 0)
+        #         # clip values to [0, 1]
+        #         frame = np.clip(frame, 0, 1)
+        #         frame = (frame * 255).astype(np.uint8)
+        #         out_vis.write(np.array(frame)[:,:,::-1])
+        #     out_vis.release()
+        
+                    
+        for i in range (reconstructed_out.shape[0]):
+            out_vis = cv2.VideoWriter(filename=f'./reconstructed_video_{i}.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=4, frameSize=(224, 224), isColor=True)
+            for j in range (reconstructed_out.shape[2]):
+                frame = reconstructed_out[i, :, j, :, :].detach().cpu().numpy()
+                frame = frame.transpose(1, 2, 0)
+                # clip values to [0, 1]
+                frame = np.clip(frame, 0, 1)
+                frame = (frame * 255).astype(np.uint8)
+            #     out_vis.write(np.array(frame)[:,:,::-1].astype(np.uint8))
+            # out_vis.release()
+ 
+                # extract bbox
+                bb = bbox[i, 0, :].detach().cpu().numpy()
+
+
+                img_1 = unnorm_videos[i, :, j, :, :].detach().cpu().numpy()
+                # convert channel first to channel last
+                img_1 = img_1.transpose(1, 2, 0)
+                img_2 = reconstructed_out[i, :, j, :, :].detach().cpu().numpy()
+                img_2 = img_2.transpose(1, 2, 0)
+                img_3 = masked_videos_out[i, :, j, :, :].detach().cpu().numpy()
+                img_3 = (img_3.transpose((1, 2, 0))*255).astype(np.uint8).copy()
+                # # plot the bbox
+                # img_3 = cv2.rectangle(
+                #     img_3,
+                #     (int(bb[0]), int(bb[1])),
+                #     (int(bb[2]), int(bb[3])),
+                #     (0, 255, 0),
+                #     2,
+                # )
+                
+                
+
+                # save the reconstructed image
+                model_name = model.__class__.__name__
+                save_path = f'./reconstruction/MOFO/video_{i}'#os.path.join('VideoMAE', 'reconstruction')
+                if not os.path.exists(save_path):
+                    os.makedirs(save_path, exist_ok=True)
+
+                # fig, ax = plt.subplots(1, 2, figsize=(10, 8))
+                # # set title
+                # fig.suptitle(
+                #     "\n".join(
+                #         textwrap.wrap(
+                #             "Reconstruction of the video, Model: " + model_name, 60
+                #         )
+                #     )
+                # )
+                # plt.subplot(1, 2, 1)
+                # plt.title("Original video")
+                # plt.imshow(img_1)
+                # plt.subplot(1, 2, 2)
+                # plt.title("Reconstructed video")
+                # plt.imshow(img_2)
+                # plt.savefig(os.path.join(save_path, model_name + f'_both_{i}-{j}.png'))
+                # plt.close()
+
+                # plot each image separately
+                plt.imshow(img_1)
+                plt.axis('off')
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_path, model_name + f'_original{i}-{j}.png'), transparent = True, bbox_inches = 'tight', pad_inches = 0)
+                plt.close()
+                plt.imshow(img_2)
+                plt.axis('off')
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_path, model_name + f'_reconstructed{i}-{j}.png'), transparent = True, bbox_inches = 'tight', pad_inches = 0)
+                plt.close()
+                plt.imshow(img_3)
+                plt.axis('off')
+                plt.tight_layout()
+                plt.savefig(os.path.join(save_path, model_name + f'_masked{i}-{j}.png'), transparent = True, bbox_inches = 'tight', pad_inches = 0)
+                plt.close()
+
+        ########################################################
 
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
